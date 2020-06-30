@@ -10,6 +10,7 @@ from __future__ import print_function
 
 import argparse
 import ast
+import mlflow
 import os
 import random
 import socket
@@ -28,6 +29,7 @@ from robovat.simulation.simulator import Simulator
 from robovat.utils import time_utils
 from robovat.utils.logging import logger
 from robovat.utils.yaml_config import YamlConfig
+from tools.pose_log import log_pose
 
 
 def parse_args():
@@ -217,6 +219,7 @@ def main():
     # Generate and write episodes.
     logger.info('Start running...')
     env.reset()
+    log_pose()
     num_episodes_this_file = 0
     for episode_index, episode in generate_episodes(
             env,
@@ -233,6 +236,7 @@ def main():
                 filename = 'episodes_%s.hdf5' % (timestamp)
                 output_path = os.path.join(output_dir, filename)
                 logger.info('Created a new file %s...', output_path)
+            
 
             # Append the episode to the file.
             logger.info('Saving episode %d to file %s (%d / %d)...',

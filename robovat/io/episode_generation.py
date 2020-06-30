@@ -10,12 +10,19 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import mlflow
+import numpy as np
 import socket
 import time
 import traceback
 
+from robovat.simulation.body import Body
 from robovat.utils import time_utils
 from robovat.utils.logging import logger
+from tools.pose_log import helper as log_pose
+
+
+
 
 
 def generate_episode(env, policy, num_steps=None, debug=False):
@@ -52,6 +59,8 @@ def generate_episode(env, policy, num_steps=None, debug=False):
             }
         transitions.append(transition)
         observation = new_observation
+        #print(env._get_movable_status())
+        log_pose(info, env.movable_bodies)
 
         if done:
             break
@@ -88,6 +97,7 @@ def generate_episodes(env, policy, num_steps=None, num_episodes=None,
     episode_index = 0
     total_time = 0.0
 
+
     while(1):
         try:
             tic = time.time()
@@ -100,7 +110,6 @@ def generate_episodes(env, policy, num_steps=None, num_episodes=None,
 
             toc = time.time()
             total_time += (toc - tic)
-
             logger.info(
                 'Episode %d finished in %.2f sec. '
                 'In average each episode takes %.2f sec',
@@ -114,6 +123,8 @@ def generate_episodes(env, policy, num_steps=None, num_episodes=None,
             traceback.print_exc()
 
             if False:
+                #mlflow.end_run()
                 exit()
             else:
+                #mlflow.end_run()
                 logger.error('The episode is discarded due to: %s', type(e))

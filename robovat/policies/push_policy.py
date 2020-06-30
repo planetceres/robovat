@@ -7,6 +7,7 @@ from __future__ import print_function
 
 from robovat.envs.push import heuristic_push_sampler
 from robovat.policies import policy
+from robovat.policies.random_policy import RandomPolicy
 
 
 class HeuristicPushPolicy(policy.Policy):
@@ -49,4 +50,19 @@ class HeuristicPushPolicy(policy.Policy):
             num_episodes,
             num_steps,
             num_samples=1)
-        return action
+        return action 
+
+'''class RandomPolicy(RandomPolicy):
+    """Random Push Policy"""
+    def __init__(self, env, config=None):
+          super(RandomPolicy, self).__init__(env, config)
+          
+          #config = self.config  
+
+    def _action(self, observation):
+        #action = random_policy.RandomPolicy._action(observation)
+        return action'''
+		
+
+
+
