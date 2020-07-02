@@ -52,17 +52,4 @@ class HeuristicPushPolicy(policy.Policy):
             num_samples=1)
         return action 
 
-'''class RandomPolicy(RandomPolicy):
-    """Random Push Policy"""
-    def __init__(self, env, config=None):
-          super(RandomPolicy, self).__init__(env, config)
-          
-          #config = self.config  
-
-    def _action(self, observation):
-        #action = random_policy.RandomPolicy._action(observation)
-        return action'''
-		
-
-
 

@@ -10,8 +10,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import mlflow
-import numpy as np
 import socket
 import time
 import traceback
@@ -123,8 +121,8 @@ def generate_episodes(env, policy, num_steps=None, num_episodes=None,
             traceback.print_exc()
 
             if False:
-                #mlflow.end_run()
+
                 exit()
             else:
-                #mlflow.end_run()
+
                 logger.error('The episode is discarded due to: %s', type(e))

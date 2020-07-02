@@ -5,20 +5,19 @@
 import random
 import string
 import mlflow
-import numpy as np
 
 from robovat.math import Pose 
 from robovat.simulation.body import Body
 
 
-'''def random_string(stringLength=8):
+def random_string(stringLength=8):
     letters = string.ascii_lowercase
-    return ''.join(random.choice(letters) for i in range(stringLength))'''
+    return ''.join(random.choice(letters) for i in range(stringLength))
 
 def log_pose():
-    #experiment_name = random_string()
+    experiment_name = random_string()
     #mlflow.set_tracking_uri()
-    experiment_id = mlflow.create_experiment()
+    experiment_id = mlflow.create_experiment(experiment_name)
     mlflow.start_run()
     #run = mlflow.tracking.MlflowClient.create_run(experiment_id)
     #run_id = run.info.run_id
