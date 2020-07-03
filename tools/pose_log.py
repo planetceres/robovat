@@ -28,9 +28,9 @@ def helper(info, objs):
     #experiment = mlflow.get_experiment_by_name('random')
     #experiment_id = experiment.experiment_id
 
-    batch = {}
 
     for body in objs:
+        batch = {}
         batch.update( {body.name+"_X" : body.pose.x} )
         batch.update( {body.name+"_Y" : body.pose.y} )
         batch.update( {body.name+"_Z" : body.pose.z} )
