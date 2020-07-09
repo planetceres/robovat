@@ -24,13 +24,26 @@ def log_pose():
  
 
 
-def helper(info, objs):
+def helper(info, objs, action):
     #experiment = mlflow.get_experiment_by_name('random')
     #experiment_id = experiment.experiment_id
 
-
+    mlflow.log_metric("start_X" , action[0], step = info)
+    mlflow.log_metric("start_Y" , action[1], step = info)
+    mlflow.log_metric("motion_X" , action[2], step = info)
+    mlflow.log_metric("motion_Y" , action[3], step = info)
     for body in objs:
-        batch = {}
+
+        mlflow.log_metric(body.name+"_X" , body.pose.x, step = info)
+        mlflow.log_metric(body.name+"_Y" , body.pose.y, step = info)
+        mlflow.log_metric(body.name+"_Z" , body.pose.z, step = info)
+        mlflow.log_metric(body.name+"_roll" , body.pose.euler[0], step = info)
+        mlflow.log_metric(body.name+"_pitch" , body.pose.euler[1], step = info)
+        mlflow.log_metric(body.name+"_yaw" , body.pose.euler[2], step = info)
+
+
+
+        '''batch = {}
         batch.update( {body.name+"_X" : body.pose.x} )
         batch.update( {body.name+"_Y" : body.pose.y} )
         batch.update( {body.name+"_Z" : body.pose.z} )
@@ -38,7 +51,7 @@ def helper(info, objs):
         batch.update( {body.name+"_pitch" : body.pose.euler[1]} )
         batch.update( {body.name+"_yaw" : body.pose.euler[2]} )
 
-        mlflow.log_metrics(metrics = batch)
+        mlflow.log_metrics(metrics = batch)'''
 
 
 

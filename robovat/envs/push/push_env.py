@@ -761,7 +761,10 @@ class PushEnv(arm_env.ArmEnv):
         action = np.reshape(action, [2, 2])
         start = action[0, :]
         motion = action[1, :]
-
+        print('\n start: ')
+        print(start)
+        print('\n motion: ')
+        print(motion)
         # Start.
         x = start[0] * self.start_range[0] + self.start_offset[0]
         y = start[1] * self.start_range[1] + self.start_offset[1]

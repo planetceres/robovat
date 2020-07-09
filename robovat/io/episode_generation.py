@@ -10,6 +10,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import mlflow
 import socket
 import time
 import traceback
@@ -18,6 +19,7 @@ from robovat.simulation.body import Body
 from robovat.utils import time_utils
 from robovat.utils.logging import logger
 from tools.pose_log import helper as log_pose
+from robovat.observations.camera_obs import CameraObs
 
 
 
@@ -47,7 +49,6 @@ def generate_episode(env, policy, num_steps=None, debug=False):
 
     while(1):
         action = policy.action(observation)
-
         new_observation, reward, done, info = env.step(action)
         transition = {
             'state': observation,
@@ -58,8 +59,8 @@ def generate_episode(env, policy, num_steps=None, debug=False):
         transitions.append(transition)
         observation = new_observation
         #print(env._get_movable_status())
-        log_pose(info, env.movable_bodies)
-
+        log_pose(info, env.movable_bodies, action)
+       
         if done:
             break
 
@@ -72,7 +73,7 @@ def generate_episode(env, policy, num_steps=None, debug=False):
         'timestamp': time_utils.get_timestamp_as_string(),
         'transitions': transitions,
     }
-
+    mlflow.end_run()
     return episode
 
 
