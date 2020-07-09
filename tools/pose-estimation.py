@@ -92,20 +92,25 @@ def build_model(train_dataset):
 
 def predict_for(unknown, dataset):
 
-
+    components = ['X2', 'Y2', 'Z2', 'roll2', 'pitch2', 'yaw2']
     train_dataset = dataset.sample(frac=0.8,random_state=0)
     test_dataset = dataset.drop(train_dataset.index)
 
     print(train_dataset.shape)
     print(test_dataset.shape)
     train_stats = train_dataset.describe()
-    train_stats.pop(unknown)
+    for component in components:
+        train_stats.pop(component)
     train_stats = train_stats.transpose()
      
+    for component in components:
+        if component != unknown:
+            train_dataset.pop(component)
+            test_dataset.pop(component)
 
     train_labels = train_dataset.pop(unknown)
     test_labels = test_dataset.pop(unknown)
-    
+   
 
     def norm(x):
         return (x - train_stats['mean']) / train_stats['std']
@@ -142,7 +147,7 @@ def predict_for(unknown, dataset):
 
     plt.show()'''
 
-    early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', patience=100)
+    early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', patience=200)
 
     early_history = model.fit(normed_train_data, train_labels, 
                     epochs=EPOCHS, validation_split = 0.2, verbose=0, 
