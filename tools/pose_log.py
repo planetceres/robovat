@@ -43,18 +43,5 @@ def helper(info, objs, action):
 
 
 
-        '''batch = {}
-        batch.update( {body.name+"_X" : body.pose.x} )
-        batch.update( {body.name+"_Y" : body.pose.y} )
-        batch.update( {body.name+"_Z" : body.pose.z} )
-        batch.update( {body.name+"_roll" : body.pose.euler[0]} )
-        batch.update( {body.name+"_pitch" : body.pose.euler[1]} )
-        batch.update( {body.name+"_yaw" : body.pose.euler[2]} )
-
-        mlflow.log_metrics(metrics = batch)'''
-
-
-
-
 
 

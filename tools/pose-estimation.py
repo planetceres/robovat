@@ -1,8 +1,6 @@
 '''
 estimates next pose after a given action is performed
 '''
-# Use seaborn for pairplot
-#!pip install -q seaborn
 
 # Use some functions from tensorflow_docs
 #!pip install -q git+https://github.com/tensorflow/docs
@@ -25,34 +23,37 @@ import tensorflow_docs.plots
 import tensorflow_docs.modeling
 
 
-
 def get_data(path):
+    '''
+    returns datasets consisting of initial-pose, final-pose and action
+    from log files created using log_pose.py
+    '''
 
     list = os.listdir(path) 
     num_files = len(list)
-    print (num_files)
-
     num_objects = int((num_files-4)/6)
+
+    '''extract action components from log files'''
 
     a1 = np.genfromtxt(path+ 'start_X', delimiter=' ')[:, [1]]
     a2 = np.genfromtxt(path+ 'start_Y', delimiter=' ')[:, [1]]
     a3 = np.genfromtxt(path+ 'motion_X', delimiter=' ')[:, [1]]
     a4 = np.genfromtxt(path+ 'motion_Y', delimiter=' ')[:, [1]]
-
     action1 = np.concatenate((a1,a2,a3,a4), axis = 1)
-    action1 = np.delete(action1, 0, axis=0)
-    tpl = ()
+    action1 = np.delete(action1, 0, axis=0) #delete the first column since there is no corresponding initial pose
+    
+    '''duplicate action column to account for number of objects'''
 
+    tpl = ()
     for i in range(0, num_objects):
         tpl = tpl + (action1, )
-
     action = np.concatenate(tpl, axis = 0)
-    print(action)
-    print(action.shape)
+
+
+    '''extract pose data from log files and create initial and final pose datasets'''
 
     initial_pose = np.empty((0, 6))
     final_pose = np.empty((0, 6))
-
 
     for i in range(0, num_objects):
         X1 = np.genfromtxt(path+'movable_'+str(i)+'_X', delimiter=' ')[:, [1]]
@@ -68,10 +69,6 @@ def get_data(path):
         
         initial_pose = np.concatenate((initial_pose, pose1), axis=0)
         final_pose = np.concatenate((final_pose, pose2), axis=0)
-
-    print(initial_pose.shape)
-    print(final_pose.shape)
-    print(action.shape)
        
     return (initial_pose, final_pose, action)
 
@@ -91,13 +88,18 @@ def build_model(train_dataset):
 
 
 def predict_for(unknown, dataset):
+    '''
+    creates a model to estimate the values of the unknown final pose component using the tf model above 
+    returns the value and the ground truth
+    '''
 
     components = ['X2', 'Y2', 'Z2', 'roll2', 'pitch2', 'yaw2']
+
+    '''separate dataset into test and train data'''
     train_dataset = dataset.sample(frac=0.8,random_state=0)
     test_dataset = dataset.drop(train_dataset.index)
 
-    print(train_dataset.shape)
-    print(test_dataset.shape)
+    '''separate train labels and test labels, and drop the rest of final pose data.'''
     train_stats = train_dataset.describe()
     for component in components:
         train_stats.pop(component)
@@ -111,41 +113,19 @@ def predict_for(unknown, dataset):
     train_labels = train_dataset.pop(unknown)
     test_labels = test_dataset.pop(unknown)
    
-
+    ''' normalize training and test data '''
     def norm(x):
         return (x - train_stats['mean']) / train_stats['std']
 
     normed_train_data = norm(train_dataset)
     normed_test_data = norm(test_dataset)
 
+
     model = build_model(train_dataset)
 
-    print(model.summary())
-  
-    example_batch = normed_train_data[:10]
-    example_result = model.predict(example_batch)
-    print(example_result)
-
+    '''train for 1000 epochs with early-stopping'''
 
     EPOCHS = 1000
-    
-    '''history = model.fit(normed_train_data, train_labels,
-                        epochs=EPOCHS, validation_split = 0.2, verbose=0,
-                        callbacks=[tfdocs.modeling.EpochDots()])
-
-
-
-    hist = pd.DataFrame(history.history)
-    hist['epoch'] = history.epoch
-    print('\n\n\n')
-    print(hist.tail())
-
-    plotter = tfdocs.plots.HistoryPlotter(smoothing_std=2)
-    plotter.plot({'Basic': history}, metric = "mean_absolute_error")
-    plt.ylim([0, 10])
-    plt.ylabel('MAE ['+unknown+']')
-
-    plt.show()'''
 
     early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', patience=200)
 
@@ -154,14 +134,6 @@ def predict_for(unknown, dataset):
                     callbacks=[early_stop, tfdocs.modeling.EpochDots()])
     ehist = pd.DataFrame(early_history.history)
     ehist['epoch'] = early_history.epoch
-    print('\n\n\n')
-    print(ehist.tail())
-
-    '''plotter = tfdocs.plots.HistoryPlotter(smoothing_std=2)
-    plotter.plot({'Early Stopping': early_history}, metric = "mean_absolute_error")
-    plt.ylim([0, 10])
-    plt.ylabel('MAE ['+unknown+']')
-    plt.show()'''
 
 
     loss, mae, mse = model.evaluate(normed_test_data, test_labels, verbose=2)
@@ -170,6 +142,8 @@ def predict_for(unknown, dataset):
 
     test_predictions = model.predict(normed_test_data).flatten()
 
+    '''Visualize the test predictions and prediction error'''
+
     a = plt.axes(aspect='equal')
     plt.scatter(test_labels, test_predictions)
     plt.xlabel('True Values ['+unknown+']')
@@ -177,8 +151,7 @@ def predict_for(unknown, dataset):
     lims = [0, 50]
     plt.xlim(lims)
     plt.ylim(lims)
-    _ = plt.plot(lims, lims)
-    
+    _ = plt.plot(lims, lims)   
     plt.show()
 
     error = test_predictions - test_labels
@@ -191,35 +164,25 @@ def predict_for(unknown, dataset):
 
 
 def main():
+
     initial_pose = np.empty((0,6))
     final_pose = np.empty((0,6))
     action = np.empty((0,4))
+
+    '''create initial pose, final pose and action datasets for all Runs'''
+
     for i in range(1, 16):
         p, q, r = get_data('curis-project/robovat-curis-mona/docs/logs/Run'+str(i)+'/')
-        print ('\n\n')
-        print(p.shape)
         initial_pose = np.concatenate((initial_pose, p), axis=0)
         final_pose = np.concatenate((final_pose, q), axis=0)
         action = np.concatenate((action, r), axis=0)
-        
-    print(action.shape)
-    print(final_pose.shape)
-    print(initial_pose.shape)
-
 
 
     dataset = pd.DataFrame({'X1': initial_pose[:, 0], 'Y1': initial_pose[:, 1], 'Z1': initial_pose[:, 2], 'roll1': initial_pose[:, 3], 'pitch1': initial_pose[:, 4], 'yaw1': initial_pose[:, 5],
                             'a1': action[:, 0], 'a2': action[:, 1], 'a3': action[:, 2], 'a4': action[:, 3], 'X2': final_pose[:, 0], 'Y2': final_pose[:, 1], 'Z2': final_pose[:, 2], 
                             'roll2': final_pose[:, 3], 'pitch2': final_pose[:, 4], 'yaw2': final_pose[:, 5]})
 
-    print(dataset.tail())
-    
-    print(dataset.isna().sum())
-    
-
-
-    #sns.pairplot(train_dataset[["X1", "a1", "X2"]], diag_kind="kde")
-    #plt.show()
+    '''Create models to estimate each final pose component using the predict_for function'''
 
     X, predicted_X = predict_for('X2',dataset)
     Y, predicted_Y = predict_for('Y2',dataset)
@@ -228,26 +191,21 @@ def main():
     pitch, predicted_pitch = predict_for('pitch2',dataset)
     yaw, predicted_yaw = predict_for('yaw2',dataset)
 
-    
+    '''Save individual data files of each final pose component estimate vs ground truth'''
+
     X_result= np.column_stack((X, predicted_X))
     np.savetxt("X-result.csv", X_result, delimiter=",")
-
     Y_result= np.column_stack((Y, predicted_Y))
     np.savetxt("Y-result.csv", Y_result, delimiter=",")
-
     Z_result= np.column_stack((Z, predicted_Z))
     np.savetxt("Z-result.csv", Z_result, delimiter=",")
-
     roll_result= np.column_stack((roll, predicted_roll))
     np.savetxt("roll-result.csv", roll_result, delimiter=",")
-
     pitch_result= np.column_stack((pitch, predicted_pitch))
     np.savetxt("pitch-result.csv", pitch_result, delimiter=",")
-
     yaw_result= np.column_stack((yaw, predicted_yaw))
     np.savetxt("yaw-result.csv", yaw_result, delimiter=",")
     
-
 
 if __name__ == '__main__':
     main()
