@@ -235,7 +235,7 @@ def main():
                 filename = 'episodes_%s.hdf5' % (timestamp)
                 output_path = os.path.join(output_dir, filename)
                 logger.info('Created a new file %s...', output_path)
-            
+        
             # Append the episode to the file.
             logger.info('Saving episode %d to file %s (%d / %d)...',
                         episode_index,

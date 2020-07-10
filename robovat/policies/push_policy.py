@@ -50,6 +50,5 @@ class HeuristicPushPolicy(policy.Policy):
             num_episodes,
             num_steps,
             num_samples=1)
+
         return action 
-
-
