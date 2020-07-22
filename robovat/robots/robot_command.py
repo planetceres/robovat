@@ -17,7 +17,7 @@ class RobotCommand(object):
                  command_type,
                  arguments,
                  timeout=None,
-                 async=False):
+                 async_command=False):
         """Initialize.
 
         Args:
@@ -25,10 +25,10 @@ class RobotCommand(object):
             command_type: The type of the command to be executed.
             args: The arguments of the command.
             timeout: The maximal execution time.
-            async: If the command is asynchronous.
+            async_command: If the command is asynchronous.
             """
         self.component = component
         self.command_type = command_type
         self.arguments = arguments
         self.timeout = timeout
-        self.async = async
+        self.async_command = async_command
