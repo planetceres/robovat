@@ -6,6 +6,21 @@ authors = ["Your Name <you@example.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.6, <3.8"
+easydict = "^1.9"
+future = "^0.18.2"
+gym = "^0.17.2"
+h5py = "^2.10.0"
+matplotlib = "^3.3.0"
+numpy = "^1.19.1"
+opencv-python = "^4.3.0"
+Pillow = "^7.2.0"
+python-pcl = "^0.3.0-alpha.1"
+PyYAML = "^5.3.1"
+scikit-learn = "^0.23.1"
+scipy = "^1.4.1"
+six = "^1.15.0"
+sklearn = "^0.0"
+pybullet = "^2.8.4"
 
 [tool.poetry.dev-dependencies]
 

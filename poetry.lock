@@ -265,7 +265,8 @@ python-versions = ">=3.5"
 version = "2.1.0"
 
 [metadata]
-content-hash = "9647bfb6189bf46cb97c1d4f690ba3d1bc68b53d6c6b22b21de4b003246c0915"
+content-hash = "c8523bc3d9197c11f8c3b99f5cacd6f9a3d591ebf27cc4b768c7855d0f7930f1"
+lock-version = "1.0"
 python-versions = "^3.6, <3.8"
 
 [metadata.files]
