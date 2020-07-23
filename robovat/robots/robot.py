@@ -15,6 +15,15 @@ class Robot(object):
     """Base class for robots."""
     __metaclass__ = abc.ABCMeta
 
+    def __init__(self, config=None):
+        """Initialize.
+
+        config: The configuartion as a dictionary.
+        """
+        self.config = config or self.default_config
+        if isinstance(self.config, str):
+            self.config = YamlConfig(self.config).as_easydict()
+
     @abc.abstractmethod
     def reboot(self):
         """Reboot the robot.

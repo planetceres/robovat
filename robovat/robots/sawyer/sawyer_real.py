@@ -148,6 +148,10 @@ class SawyerReal(sawyer.Sawyer):
     def joint_velocities(self):
         return self._limb.joint_velocities()
 
+    @property
+    def finger_position(self):
+        return self._gripper.get_position()
+
     def reboot(self):
         """Reboot the robot.
         """
@@ -172,7 +176,8 @@ class SawyerReal(sawyer.Sawyer):
         # Start and open the gripper.
         if self._has_gripper:
             self._gripper.start()
-            # self.grip(0)
+            if self.config.OPEN_GRIPPER_WHEN_RESET:
+                self.grip(0)
 
     def move_to_joint_positions(self,
                                 positions,

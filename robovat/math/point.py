@@ -21,13 +21,7 @@ class Point(np.ndarray):
         Returns:
             A new instance.
         """
-        if isinstance(value, (list, tuple)):
-            assert len(value) == 3
-        elif isinstance(value, np.ndarray):
-            assert value.size == 3
-        else:
-            raise ValueError('Data %r has unrecognized type: %r',
-                             value, type(value))
+        assert len(value) == 3
 
         obj = np.asarray(value).view(cls)
 

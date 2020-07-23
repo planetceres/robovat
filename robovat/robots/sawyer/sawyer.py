@@ -7,22 +7,12 @@ from __future__ import print_function
 import abc
 
 from robovat.robots import robot
-from robovat.utils.yaml_config import YamlConfig
 
 
 class Sawyer(robot.Robot):
     """Sawyer robot."""
 
     __metaclass__ = abc.ABCMeta
-
-    def __init__(self, config=None):
-        """Initialize.
-
-        config: The configuartion as a dictionary.
-        """
-        self.config = config or self.default_config
-        if isinstance(self.config, str):
-            self.config = YamlConfig(self.config).as_easydict()
 
     @abc.abstractmethod
     def reboot(self):
@@ -118,3 +108,11 @@ class Sawyer(robot.Robot):
             True if all control commands are done, False otherwise.
         """
         pass
+
+    def is_ready(self):
+        """Check if the robot is busy with control commands.
+
+        Returns:
+            True if all control commands are done, False otherwise.
+        """
+        return self.is_limb_ready() and self.is_gripper_ready()

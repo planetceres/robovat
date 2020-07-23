@@ -43,11 +43,11 @@ class PushEnv(arm_env.ArmEnv):
             config: Environment configuration.
             debug: True if it is debugging mode, False otherwise.
         """
-        self._simulator = simulator
-        self._config = config or self.default_config
-        self._debug = debug
+        self.simulator = simulator
+        self.config = config or self.default_config
+        self.debug = debug
 
-        self.camera = self._create_camera(
+        self.camera = self.create_camera(
             height=self.config.KINECT2.DEPTH.HEIGHT,
             width=self.config.KINECT2.DEPTH.WIDTH,
             intrinsics=self.config.KINECT2.DEPTH.INTRINSICS,
@@ -95,7 +95,7 @@ class PushEnv(arm_env.ArmEnv):
         self.num_movable_bodies = None
         self.movable_body_mask = None
 
-        if self.is_simulation:
+        if self.simulator:
             movable_name = self.config.MOVABLE_NAME.upper()
             self.movable_config = self.config.MOVABLE[movable_name]
             self.movable_bodies = []
@@ -140,6 +140,17 @@ class PushEnv(arm_env.ArmEnv):
         self.num_successes = 0
         self.num_successes_by_step = [0] * int(self.config.MAX_STEPS + 1)
 
+        # Observations and rewards.
+        observations = self.initialize_observations()
+        reward_fns = [
+            push_reward.PushReward(
+                name='reward',
+                task_name=self.task_name,
+                layout_id=self.layout_id,
+                is_planning=False
+            )
+        ]
+
         # Recording.
         self.use_recording = self.config.RECORDING.USE
         if self.use_recording:
@@ -156,15 +167,30 @@ class PushEnv(arm_env.ArmEnv):
             self.ax = ax
 
         super(PushEnv, self).__init__(
+            observations=observations,
+            reward_fns=reward_fns,
             simulator=self.simulator,
             config=self.config,
             debug=self.debug)
 
-    def _create_observations(self):
-        """Create observations.
+    @property
+    def action_space(self):
+        if self.num_goal_steps is None:
+            action_shape = [4]
+        else:
+            assert self.num_goal_steps > 0
+            action_shape = [self.num_goal_steps, 4]
+
+        return gym.spaces.Box(
+            low=-np.ones(action_shape, dtype=np.float32),
+            high=np.ones(action_shape, dtype=np.float32),
+            dtype=np.float32)
+
+    def initialize_observations(self):
+        """Initialize the observations.
 
         Returns:
-            List of observations.
+            A list of observations.
         """
         observations = [
             attribute_obs.IntegerAttributeObs(
@@ -188,7 +214,7 @@ class PushEnv(arm_env.ArmEnv):
         # In simulation, ground truth segmented point clouds are provided. In
         # the real world, the segmented point clouds are computed using
         # clustering algorithms.
-        if self.is_simulation:
+        if self.simulator:
             observations += [
                 camera_obs.SegmentedPointCloudObs(
                     self.camera,
@@ -210,7 +236,7 @@ class PushEnv(arm_env.ArmEnv):
             ]
 
         # Prestiged information.
-        if self.is_simulation and self.config.USE_PRESTIGE_OBS:
+        if self.simulator and self.config.USE_PRESTIGE_OBS:
             observations += [
                 pose_obs.PoseObs(
                     num_bodies=self.max_movable_bodies,
@@ -235,42 +261,11 @@ class PushEnv(arm_env.ArmEnv):
 
         return observations
 
-    def _create_reward_fns(self):
-        """Initialize reward functions.
-
-        Returns:
-            List of reward functions.
-        """
-        return [
-            push_reward.PushReward(
-                name='reward',
-                task_name=self.task_name,
-                layout_id=self.layout_id,
-                is_planning=False
-            )
-        ]
-
-    def _create_action_space(self):
-        """Create the action space.
-
-        Returns:
-            The action space.
-        """
-        if self.num_goal_steps is None:
-            action_shape = [4]
-        else:
-            action_shape = [self.num_goal_steps, 4]
-
-        return gym.spaces.Box(
-            low=-np.ones(action_shape, dtype=np.float32),
-            high=np.ones(action_shape, dtype=np.float32),
-            dtype=np.float32)
-
-    def _reset(self):
+    def reset(self):
         """Reset."""
-        observations = super(PushEnv, self)._reset()
+        observations = super(PushEnv, self).reset()
 
-        self._reset_camera(
+        self.reset_camera(
             self.camera,
             intrinsics=self.config.KINECT2.DEPTH.INTRINSICS,
             translation=self.config.KINECT2.DEPTH.TRANSLATION,
@@ -281,7 +276,7 @@ class PushEnv(arm_env.ArmEnv):
 
         if self.use_recording:
             hostname = socket.gethostname().split('.')[0]
-            self.recording_camera = self._create_camera(
+            self.recording_camera = self.create_camera(
                 height=self.config.RECORDING.CAMERA.HEIGHT,
                 width=self.config.RECORDING.CAMERA.WIDTH,
                 intrinsics=self.config.RECORDING.CAMERA.INTRINSICS,
@@ -328,12 +323,12 @@ class PushEnv(arm_env.ArmEnv):
 
         return observations
 
-    def _reset_scene(self):
+    def reset_scene(self):
         """Reset the scene in simulation or the real world."""
-        super(PushEnv, self)._reset_scene()
+        super(PushEnv, self).reset_scene()
 
         # Simulation.
-        if self.is_simulation:
+        if self.simulator:
             self.num_movable_bodies = np.random.randint(
                 low=self.min_movable_bodies,
                 high=self.max_movable_bodies + 1)
@@ -601,13 +596,13 @@ class PushEnv(arm_env.ArmEnv):
 
         See parent class.
         """
-        observation, reward, done, info = super(PushEnv, self).step(action)
+        observation, reward, is_done, info = super(PushEnv, self).step(action)
 
-        if done and reward >= self.config.SUCCESS_THRESH:
+        if is_done and reward >= self.config.SUCCESS_THRESH:
             self.num_successes += 1
             self.num_successes_by_step[self._num_steps] += 1
 
-        if done:
+        if is_done:
             logger.info(
                 'num_successes: %d, success_rate: %.3f',
                 self.num_successes,
@@ -626,9 +621,9 @@ class PushEnv(arm_env.ArmEnv):
                 self.num_ineffective / float(self.num_total_steps + 1e-14),
                 self.num_useful / float(self.num_total_steps + 1e-14))
 
-        return observation, reward, done, info
+        return observation, reward, is_done, info
 
-    def _execute_action(self, action):  # NOQA
+    def execute_action(self, action):  # NOQA
         """Execute the robot action.
 
         Args:
@@ -651,7 +646,7 @@ class PushEnv(arm_env.ArmEnv):
         self.start_status = self._get_movable_status()
         while(self.phase != 'done'):
 
-            if self.is_simulation:
+            if self.simulator:
                 self.simulator.step()
 
                 if self.use_recording:
@@ -664,13 +659,13 @@ class PushEnv(arm_env.ArmEnv):
                     continue
 
             # Phase transition.
-            if self._is_phase_ready():
-                self.phase = self._get_next_phase()
+            if self.is_phase_ready():
+                self.phase = self.get_next_phase()
                 if self.config.DEBUG and self.debug:
                     logger.info('phase: %s, num_waypoints: %d',
                                 self.phase, self.num_waypoints)
 
-                if self.is_simulation:
+                if self.simulator:
                     self.max_phase_steps = self.simulator.num_steps
                     if self.phase == 'motion':
                         self.max_phase_steps += (
@@ -707,24 +702,24 @@ class PushEnv(arm_env.ArmEnv):
 
             self.interrupt = False
 
-            if self._check_singularity():
+            if self.check_singularity():
                 self.interrupt = True
 
-            if not self._check_safety():
+            if not self.check_safety():
                 self.interrupt = True
                 self.attributes['is_safe'] = False
 
             if self.interrupt:
                 if self.phase == 'done':
-                    self._done = True
+                    self._is_done = True
                     break
 
-        if self.is_simulation:
+        if self.simulator:
             self.simulator.wait_until_stable(self.movable_bodies)
 
         # Update attributes.
         self.end_status = self._get_movable_status()
-        self.attributes['is_effective'] = self._check_effectiveness()
+        self.attributes['is_effective'] = self.check_effectiveness()
 
         self.num_total_steps += 1
         self.num_unsafe += int(not self.attributes['is_safe'])
@@ -785,7 +780,7 @@ class PushEnv(arm_env.ArmEnv):
         waypoints = [start, end]
         return waypoints
 
-    def _get_next_phase(self):
+    def get_next_phase(self):
         """Get the next phase of the current phase.
 
         Returns:
@@ -809,7 +804,7 @@ class PushEnv(arm_env.ArmEnv):
         else:
             raise ValueError('Unrecognized phase: %r' % self.phase)
 
-    def _is_phase_ready(self):
+    def is_phase_ready(self):
         """Check if the current phase is ready.
 
         Returns:
@@ -818,7 +813,7 @@ class PushEnv(arm_env.ArmEnv):
         if self.interrupt:
             return True
 
-        if self.is_simulation:
+        if self.simulator:
             if self.robot.is_limb_ready() and self.robot.is_gripper_ready():
                 self.robot.arm.reset_targets()
                 return True
@@ -836,7 +831,7 @@ class PushEnv(arm_env.ArmEnv):
         else:
             return True
 
-    def _check_singularity(self):
+    def check_singularity(self):
         """Check singularity.
 
         Returns:
@@ -846,7 +841,7 @@ class PushEnv(arm_env.ArmEnv):
         if self.phase != 'motion':
             return False
 
-        if self.is_simulation:
+        if self.simulator:
             if self.simulator.check_contact(self.robot.arm, self.table):
                 if self.config.DEBUG:
                     logger.warning('Arm collides with the table.')
@@ -854,14 +849,14 @@ class PushEnv(arm_env.ArmEnv):
 
         return False
 
-    def _check_safety(self):
+    def check_safety(self):
         """Check if the action is safe.
 
         Returns:
             True if all the safty conditions are satisfied, False otherwise.
 
         """
-        if self.is_simulation:
+        if self.simulator:
             if self.phase == 'pre':
                 if self.simulator.check_contact(
                         self.robot.arm, self.movable_bodies):
@@ -897,14 +892,14 @@ class PushEnv(arm_env.ArmEnv):
 
         return True
 
-    def _check_effectiveness(self):
+    def check_effectiveness(self):
         """Check if the action is effective.
 
         Returns:
             True if at least one of the object has a translation or orientation
                 larger than the threshold, False otherwise.
         """
-        if self.is_simulation:
+        if self.simulator:
             delta_position = np.linalg.norm(
                     self.end_status[0] - self.start_status[0], axis=-1)
             delta_position = np.sum(delta_position)
@@ -929,7 +924,7 @@ class PushEnv(arm_env.ArmEnv):
             Concatenation of the positions and Euler angles of all objects in
                 the simulation, None in the real world.
         """
-        if self.is_simulation:
+        if self.simulator:
             positions = [body.position for body in self.movable_bodies]
             angles = [body.euler[2] for body in self.movable_bodies]
             return [np.stack(positions, axis=0), np.stack(angles, axis=0)]

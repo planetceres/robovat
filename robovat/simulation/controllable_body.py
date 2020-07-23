@@ -19,7 +19,7 @@ VELOCITY_GAIN = 1.0
 JOINT_DAMPING = 0.7
 
 # Number of steps to check if the target has been reached.
-STEPS_TO_CHECK_DONE = 100
+STEPS_TO_CHECK_DONE = 10
 
 # Number of steps to recompute IK during simulation.
 STEPS_TO_UPDATE_IK = 10
@@ -508,15 +508,14 @@ class ControllableBody(Body):
         if self._joint_target.is_ready():
             return True
 
-        inds = self._joint_target.indices
         positions = self._joint_target.positions
         velocities = self._joint_target.velocities
 
         if velocities is None:
-            velocities = [None] * len(inds)
+            velocities = [None] * len(self._joint_target.indices)
 
         for ind, target_position, target_velocity in zip(
-                inds, positions, velocities):
+                self._joint_target.indices, positions, velocities):
             current_position = self.joints[ind].position
             delta_position = target_position - current_position
             position_reached = (

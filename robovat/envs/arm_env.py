@@ -17,6 +17,8 @@ class ArmEnv(robot_env.RobotEnv):
     """The environment of robot arm."""
 
     def __init__(self,
+                 observations,
+                 reward_fns,
                  simulator=None,
                  config=None,
                  debug=False):
@@ -25,9 +27,11 @@ class ArmEnv(robot_env.RobotEnv):
         See parent class.
         """
         super(ArmEnv, self).__init__(
-            simulator=simulator,
-            config=config,
-            debug=debug)
+                observations=observations,
+                reward_fns=reward_fns,
+                simulator=simulator,
+                config=config,
+                debug=debug)
 
         # Scene.
         self.robot = None
@@ -35,12 +39,12 @@ class ArmEnv(robot_env.RobotEnv):
         self.table = None
         self.table_pose = None
 
-    def _create_camera(self,
-                       height,
-                       width,
-                       intrinsics,
-                       translation,
-                       rotation):
+    def create_camera(self,
+                      height,
+                      width,
+                      intrinsics,
+                      translation,
+                      rotation):
         """Create a camera instance.
 
         Args:
@@ -53,7 +57,7 @@ class ArmEnv(robot_env.RobotEnv):
         Returns:
             The camera instance.
         """
-        if self.is_simulation:
+        if self.simulator:
             camera = BulletCamera(
                 simulator=self.simulator,
                 height=height,
@@ -70,18 +74,13 @@ class ArmEnv(robot_env.RobotEnv):
 
         return camera
 
-    def _reset(self):
-        """Reset the environment in simulation or the real world."""
-        self._reset_scene()
-        self._reset_robot()
-
-    def _reset_scene(self):
+    def reset_scene(self):
         """Reset the scene in simulation or the real world."""
         self.table_pose = Pose(self.config.SIM.TABLE.POSE)
         self.table_pose.position.z += np.random.uniform(
             *self.config.TABLE.HEIGHT_RANGE)
 
-        if self.is_simulation:
+        if self.simulator:
             self.ground = self.simulator.add_body(self.config.SIM.GROUND.PATH,
                                                   self.config.SIM.GROUND.POSE,
                                                   is_static=True,
@@ -98,7 +97,7 @@ class ArmEnv(robot_env.RobotEnv):
                                                     is_static=True,
                                                     name='wall')
 
-    def _reset_robot(self):
+    def reset_robot(self):
         """Reset the robot in simulation or the real world."""
         self.robot = sawyer.factory(
             simulator=self.simulator,
@@ -106,14 +105,14 @@ class ArmEnv(robot_env.RobotEnv):
         self.robot.move_to_joint_positions(
             self.config.ARM.OFFSTAGE_POSITIONS)
 
-    def _reset_camera(self,
-                      camera,
-                      intrinsics,
-                      translation,
-                      rotation,
-                      intrinsics_noise=None,
-                      translation_noise=None,
-                      rotation_noise=None):
+    def reset_camera(self,
+                     camera,
+                     intrinsics,
+                     translation,
+                     rotation,
+                     intrinsics_noise=None,
+                     translation_noise=None,
+                     rotation_noise=None):
         """Reset camera.
 
         If camera is in the real world, reset the intrinsics and extrinsics to
@@ -133,7 +132,7 @@ class ArmEnv(robot_env.RobotEnv):
         translation = np.copy(translation).astype(np.float32)
         rotation = np.copy(rotation).astype(np.float32)
 
-        if self.is_simulation:
+        if self.simulator:
             if intrinsics_noise is not None:
                 intrinsics += np.random.uniform(
                     -np.array(intrinsics_noise),

@@ -24,16 +24,7 @@ class Euler(np.ndarray):
         Returns:
             A new instance.
         """
-        if isinstance(value, (list, tuple)):
-            assert len(value) == 3
-        elif isinstance(value, np.ndarray):
-            assert value.size == 3
-        else:
-            raise ValueError('Data %r has unrecognized type: %r',
-                             value, type(value))
-
         obj = np.asarray(value).reshape(3,).view(cls)
-
         return obj
 
     def __str__(self):

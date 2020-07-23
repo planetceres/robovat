@@ -167,7 +167,7 @@ class BulletPhysics(physics.Physics):
         if ext == '.urdf':
             # Do not use pybullet.URDF_USE_SELF_COLLISION since it will cause
             # problems for the motor control in Bullet.
-            pybullet.configureDebugVisualizer(pybullet.COV_ENABLE_RENDERING, 0)
+            # pybullet.configureDebugVisualizer(pybullet.COV_ENABLE_RENDERING, 0)
             body_uid = pybullet.loadURDF(
                 fileName=filename,
                 basePosition=position,
@@ -177,7 +177,7 @@ class BulletPhysics(physics.Physics):
                 physicsClientId=self.uid,
                 flags=pybullet.URDF_USE_SELF_COLLISION_EXCLUDE_PARENT,
                 )
-            pybullet.configureDebugVisualizer(pybullet.COV_ENABLE_RENDERING, 1)
+            # pybullet.configureDebugVisualizer(pybullet.COV_ENABLE_RENDERING, 1)
         else:
             raise ValueError('Unrecognized extension %s.' % ext)
 

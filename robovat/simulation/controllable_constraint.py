@@ -12,7 +12,7 @@ from robovat.utils.logging import logger
 
 
 # These default constants.
-NUM_STEPS_CHECK = 100
+NUM_STEPS_CHECK = 10
 TIMEOUT = 1.0
 POSITION_THRESHOLD = 0.01
 EULER_THRESHOLD = np.pi / 36
@@ -28,7 +28,8 @@ class ControllableConstraint(Constraint):
                  joint_axis=[0, 0, 0],
                  parent_frame_pose=None,
                  child_frame_pose=None,
-                 max_linear_velocity=None, max_angular_velocity=None,
+                 max_linear_velocity=None,
+                 max_angular_velocity=None,
                  max_force=None,
                  name=None):
         """Initialize.
@@ -67,6 +68,7 @@ class ControllableConstraint(Constraint):
         self._target_angular_velocity = None
         self._start_time = None
         self._stop_time = None
+        self._immediate = None
 
     def is_ready(self):
         """Check if the constraint is ready.
@@ -80,53 +82,68 @@ class ControllableConstraint(Constraint):
                         pose,
                         linear_velocity=None,
                         angular_velocity=None,
+                        position_threshold=POSITION_THRESHOLD,
+                        euler_threshold=EULER_THRESHOLD,
+                        immediate=False,
                         timeout=TIMEOUT):
         """Set target pose.
         """
+        assert not (linear_velocity is None and
+                    self._max_linear_velocity is None)
+        assert not (angular_velocity is None and
+                    self._max_angular_velocity is None)
+
         self._target_pose = pose
         self._target_linear_velocity = self.physics.time_step * (
             linear_velocity or self._max_linear_velocity)
         self._target_angular_velocity = self.physics.time_step * (
             angular_velocity or self._max_angular_velocity)
+        self._position_threshold = position_threshold
+        self._euler_threshold = euler_threshold
         self._start_time = self.physics.time()
         self._stop_time = self._start_time + timeout
-
-        self._position_threshold = POSITION_THRESHOLD
-        self._euler_threshold = EULER_THRESHOLD
+        self._immediate = immediate
 
     def update(self):
         """Update control and disturbances."""
         # Call the update function of the super class.
-        super(ControllableConstraint, self).update()
-
         if self._target_pose is not None:
             self._update_pose_control()
 
+            if self.check_timeout():
+                self.reset_targets()
+
             if self.physics.num_steps % NUM_STEPS_CHECK == 0:
-                if self.check_reached() or self.check_timeout():
+                if self.check_reached():
                     self.reset_targets()
 
     def _update_pose_control(self):
         """Update the pose control."""
-        delta_position = self._target_pose.position - self.pose.position
-        delta_position /= np.linalg.norm(delta_position)
-        delta_position *= self._target_linear_velocity
-        new_position = self.pose.position + delta_position
+        if self._immediate:
+            self.pose = self._target_pose
+        else:
+            delta_position = self._target_pose.position - self.pose.position
+            delta_position /= (np.linalg.norm(delta_position) + 1e-12)
+            delta_position *= self._target_linear_velocity
+            new_position = self.pose.position + delta_position
 
-        delta_euler = (self._target_pose.euler - self.pose.euler + np.pi
-                       ) % (2 * np.pi) - np.pi
-        delta_euler = np.minimum(np.maximum(
-            delta_euler,
-            -self._target_angular_velocity),
-            self._target_angular_velocity)
-        new_euler = self.pose.euler + delta_euler
-        new_euler[0] = (new_euler[0] + np.pi) % (2 * np.pi) - np.pi
-        new_euler[1] = (new_euler[1] + 0.5 * np.pi) % np.pi - 0.5 * np.pi
-        new_euler[2] = (new_euler[2] + np.pi) % (2 * np.pi) - np.pi
+            delta_euler = self._target_pose.euler - self.pose.euler
+            delta_euler = [
+                (delta_euler[0] + np.pi) % (2 * np.pi) - np.pi,
+                (delta_euler[1] + np.pi / 2) % (np.pi) - np.pi / 2,
+                (delta_euler[2] + np.pi) % (2 * np.pi) - np.pi]
+            delta_euler = np.minimum(np.maximum(
+                delta_euler,
+                -self._target_angular_velocity),
+                self._target_angular_velocity)
+            new_euler = self.pose.euler + delta_euler
+            new_euler = np.array(
+                [(new_euler[0] + np.pi) % (2 * np.pi) - np.pi,
+                 (new_euler[1] + np.pi / 2) % np.pi - np.pi / 2,
+                 (new_euler[2] + np.pi) % (2 * np.pi) - np.pi],
+                dtype=new_euler.dtype)
 
-        new_pose = Pose((new_position, new_euler))
-
-        self.pose = new_pose
+            self.pose = Pose((new_position, new_euler))
 
     def check_reached(self):
         """Check if the specified joint positions are reached.
@@ -134,23 +151,28 @@ class ControllableConstraint(Constraint):
         Returns:
             True if the target has been reached, False otherwise.
         """
-        delta_position = self._target_pose.position - self.pose.position
-        position_reached = (
-            abs(delta_position)[0] < self._position_threshold and
-            abs(delta_position)[1] < self._position_threshold and
-            abs(delta_position)[2] < self._position_threshold)
-
-        delta_euler = ((self._target_pose.euler - self.pose.euler) + np.pi) % (2 * np.pi) - np.pi
-
-        euler_reached = (
-            abs(delta_euler)[0] < self._euler_threshold and
-            abs(delta_euler)[1] < self._euler_threshold and
-            abs(delta_euler)[2] < self._euler_threshold)
-
-        if not (position_reached and euler_reached):
-            return False
-        else:
+        if self._target_pose is None:
             return True
+
+        delta_position = abs(self._target_pose.position - self.pose.position)
+        if (
+                delta_position[0] >= self._position_threshold or
+                delta_position[1] >= self._position_threshold or
+                delta_position[2] >= self._position_threshold):
+            return False
+
+        delta_euler = abs(self._target_pose.euler - self.pose.euler)
+        delta_euler = [
+            (delta_euler[0] + np.pi) % (2 * np.pi) - np.pi,
+            (delta_euler[1] + np.pi / 2) % (np.pi) - np.pi / 2,
+            (delta_euler[2] + np.pi) % (2 * np.pi) - np.pi]
+        if (
+                delta_euler[0] >= self._euler_threshold or
+                delta_euler[1] >= self._euler_threshold or
+                delta_euler[2] >= self._euler_threshold):
+            return False
+
+        return True
 
     def check_timeout(self):
         """Check if the joint is timeout.
@@ -158,6 +180,9 @@ class ControllableConstraint(Constraint):
         Returns:
             True if it is timeout, False otherwise.
         """
+        if self._stop_time is None:
+            return False
+
         is_timeout = self.physics.time() >= self._stop_time
 
         if is_timeout:

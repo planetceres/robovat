@@ -65,6 +65,18 @@ class Simulator(object):
     @property
     def bodies(self):
         return self._bodies
+    
+    @property
+    def controllable_bodies(self):
+        return self._controllable_bodies
+
+    @property
+    def body_list(self):
+        return self._body_list
+
+    @property
+    def controllable_body_list(self):
+        return self._controllable_body_list
 
     @property
     def num_steps(self):
@@ -77,13 +89,32 @@ class Simulator(object):
     @property
     def constraints(self):
         return self._constraints
+    
+    @property
+    def controllable_constraints(self):
+        return self._controllable_constraints
+
+    @property
+    def constraint_list(self):
+        return self._constraint_list
+
+    @property
+    def controllable_constraint_list(self):
+        return self._controllable_constraint_list
 
     def reset(self):
         """Reset the simulation."""
         self.physics.reset()
         self.physics.set_gravity(self._gravity)
         self._bodies = dict()
+        self._controllable_bodies = dict()
+        self._body_list = []
+        self._controllable_body_list = []
+        
         self._constraints = dict()
+        self._controllable_constraints = dict()
+        self._constraint_list = []
+        self._controllable_constraint_list = []
         self._num_steps = 0
 
     def start(self):
@@ -93,10 +124,10 @@ class Simulator(object):
 
     def step(self):
         """Take a simulation step."""
-        for body in self.bodies.values():
+        for body in self.controllable_body_list: #self.bodies.values():
             body.update()
 
-        for constraint in self.constraints.values():
+        for constraint in self.controllable_constraint_list: #self.constraints.values():
             constraint.update()
 
         self.physics.step()
@@ -140,6 +171,8 @@ class Simulator(object):
                     scale=scale,
                     is_static=is_static,
                     name=name)
+            self._controllable_bodies[body.name] = body
+            self._controllable_body_list.append(body)
         else:
             body = Body(
                     simulator=self,
@@ -151,6 +184,7 @@ class Simulator(object):
 
         # Add the body to the dictionary.
         self._bodies[body.name] = body
+        self._body_list.append(body)
 
         return body
 
@@ -161,7 +195,14 @@ class Simulator(object):
             body: An instance of Body.
         """
         self.physics.remove_body(self._bodies[name].uid)
+
+        body = self._bodies[name]
         del self._bodies[name]
+        if body in self.controllable_bodies:
+            del self._controllable_bodies[name]
+
+        self._body_list = list(self._bodies.values())
+        self._controllable_body_list = list(self._controllable_bodies.values())
 
     def add_constraint(self,
                        parent,
@@ -205,6 +246,8 @@ class Simulator(object):
                  max_linear_velocity=max_linear_velocity,
                  max_angular_velocity=max_angular_velocity,
                  name=name)
+            self._controllable_constraints[constraint.name] = constraint
+            self._controllable_constraint_list.append(constraint)
         else:
             assert max_linear_velocity is None
             assert max_angular_velocity is None
@@ -220,18 +263,18 @@ class Simulator(object):
 
         # Add the constraint to the dictionary.
         self._constraints[constraint.name] = constraint
+        self._constraint_list.append(constraint)
 
         return constraint
 
     def receive_robot_commands(self,
-                               robot_command,
-                               component_type='body'):
+                               robot_command):
         """Receive a robot command.
 
         Args:
             robot_command: An instance of RobotCommand.
-            component_type: Either 'body' or 'constraint'.
         """
+        component_type = robot_command.component_type
         if component_type == 'body':
             component = self._bodies[robot_command.component]
         elif component_type == 'constraint':
@@ -374,6 +417,7 @@ class Simulator(object):
             if (num_stable_steps >= min_stable_steps or
                     num_steps >= max_steps):
                 break
+        # print("Took {} steps".format(num_steps))
 
     def plot_pose(self,
                   pose,
