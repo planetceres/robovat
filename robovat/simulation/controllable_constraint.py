@@ -140,11 +140,12 @@ class ControllableConstraint(Constraint):
             abs(delta_position)[1] < self._position_threshold and
             abs(delta_position)[2] < self._position_threshold)
 
-        delta_euler = self._target_pose.euler - self.pose.euler
+        delta_euler = ((self._target_pose.euler - self.pose.euler) + np.pi) % (2 * np.pi) - np.pi
+
         euler_reached = (
-            abs(delta_euler)[0] % (2 * np.pi) < self._euler_threshold and
-            abs(delta_euler)[1] % (2 * np.pi) < self._euler_threshold and
-            abs(delta_euler)[2] % (2 * np.pi) < self._euler_threshold)
+            abs(delta_euler)[0] < self._euler_threshold and
+            abs(delta_euler)[1] < self._euler_threshold and
+            abs(delta_euler)[2] < self._euler_threshold)
 
         if not (position_reached and euler_reached):
             return False
