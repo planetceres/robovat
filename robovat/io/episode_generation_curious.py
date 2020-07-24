@@ -1,0 +1,139 @@
+"""
+Run and generate episodes.
+
+Copyright (c) 2018 Stanford University.
+Licensed under the MIT License (see LICENSE for details)
+Written by Kuan Fang
+"""
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import mlflow
+import socket
+import time
+import traceback
+
+import tools.curious_agent
+
+from robovat.simulation.body import Body
+from robovat.utils import time_utils
+from robovat.utils.logging import logger
+from tools.pose_log import logger as Plogger
+
+
+def generate_episode(env, policy, num_steps=None, debug=False): #and  curious_agent
+    """Run and generate an episode.
+
+    Args:
+        env: The environment.
+        policy: The policy.
+        num_steps: Maximum number of steps in each episode. None for infinite.
+        debug: True for visualize the policy for debugging, False otherwise.
+
+    Returns:
+        episode: The episode data as a dictionary of
+            'hostname': The hostname of the computer.
+            'timestamp': The system timestamp of the beginning of the episode.
+            'policy_info': The policy information.
+            'transitions': A list of transitions. Each transition is a
+                dictionary of state, action, reward, and info.
+    """
+    t = 0
+    transitions = []
+
+    observation = env.reset()
+    pose_logger = Plogger()
+    pose_logger.start()
+    
+    while(1):
+        #state1 = env.movable_bodies
+        action = policy.action(observation) #TODO: move to outside the loop
+        #action = curious_agent.choose_action()
+
+        new_observation, reward, done, info = env.step(action)
+        #TODO: pass on step info (action, prev-pose, next pose) to the env so env can pass them on to reward function to create curosity-based reward
+        transition = {
+            'state': observation,
+            'action': action,
+            'reward': reward,
+            'info': info,
+            }
+        #TODO:findout when to make the agent learn...at the end of each step? timer countdown?
+        #curious_agent.learn() 
+        transitions.append(transition)
+        observation = new_observation
+        
+
+        #print(env._get_movable_status())
+        pose_logger.log(info, env.movable_bodies, action)
+        
+       
+        if done:
+            break
+
+        t += 1
+        if (num_steps is not None) and (t >= num_steps):
+            break
+        
+        find_forward_error(pose_logger.uri, step-pose1, step-pose2, step-action)
+
+    episode = {
+        'hostname': socket.gethostname(),
+        'timestamp': time_utils.get_timestamp_as_string(),
+        'transitions': transitions,
+    }
+    pose_logger.end()
+
+    return episode, pose_logger
+
+
+def generate_episodes(env, policy, num_steps=None, num_episodes=None,
+                      timeout=30, debug=False):
+    """Run and generate multiple episodes.
+
+    Args:
+        env: The environment.
+        policy: The policy.
+        num_steps: Maximum number of steps in each episode. None for infinite.
+        num_episodes: Maximum number of episodes. None for infinite.
+        timeout: Seconds to timeout.
+        debug: True for visualize the policy for debugging, False otherwise.
+
+    Yields:
+        episode_index: The index of the episode.
+        episode: The episode data.
+    """
+    episode_index = 0
+    total_time = 0.0
+    #curious_agent = x
+    while(1):
+        try:
+            tic = time.time()
+
+            if debug:
+                episode, pose_logger = generate_episode(env, policy, num_steps, debug)#pass on agent
+            else:
+                with time_utils.Timeout(timeout):
+                    episode, pose_logger = generate_episode(env, policy, num_steps, debug)#pass on agent
+
+            toc = time.time()
+            total_time += (toc - tic)
+
+            logger.info(
+                'Episode %d finished in %.2f sec. '
+                'In average each episode takes %.2f sec',
+                episode_index, toc - tic, total_time / (episode_index + 1))
+
+            yield episode_index, episode, pose_logger
+
+            episode_index += 1
+
+        except Exception as e:
+            traceback.print_exc()
+
+            if False:
+                exit()
+            else:
+                logger.error('The episode is discarded due to: %s', type(e))
