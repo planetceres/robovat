@@ -15,10 +15,11 @@ import socket
 import time
 import traceback
 
+
 from robovat.simulation.body import Body
 from robovat.utils import time_utils
 from robovat.utils.logging import logger
-from tools.pose_log import helper as log_pose
+from tools.pose_log import logger as Plogger
 
 
 def generate_episode(env, policy, num_steps=None, debug=False):
@@ -42,6 +43,8 @@ def generate_episode(env, policy, num_steps=None, debug=False):
     transitions = []
 
     observation = env.reset()
+    pose_logger = Plogger()
+    pose_logger.start()
 
     while(1):
         action = policy.action(observation)
@@ -57,7 +60,8 @@ def generate_episode(env, policy, num_steps=None, debug=False):
         observation = new_observation
 
         #print(env._get_movable_status())
-        log_pose(info, env.movable_bodies, action)
+        pose_logger.log(info, env.movable_bodies, action)
+        #log_pose(info, env.movable_bodies, action)
        
         if done:
             break
@@ -65,14 +69,17 @@ def generate_episode(env, policy, num_steps=None, debug=False):
         t += 1
         if (num_steps is not None) and (t >= num_steps):
             break
+        
 
     episode = {
         'hostname': socket.gethostname(),
         'timestamp': time_utils.get_timestamp_as_string(),
         'transitions': transitions,
     }
-    mlflow.end_run()
-    return episode
+    pose_logger.end()
+
+    #mlflow.end_run()
+    return episode, pose_logger
 
 
 def generate_episodes(env, policy, num_steps=None, num_episodes=None,
@@ -99,10 +106,10 @@ def generate_episodes(env, policy, num_steps=None, num_episodes=None,
             tic = time.time()
 
             if debug:
-                episode = generate_episode(env, policy, num_steps, debug)
+                episode, pose_logger = generate_episode(env, policy, num_steps, debug)
             else:
                 with time_utils.Timeout(timeout):
-                    episode = generate_episode(env, policy, num_steps, debug)
+                    episode, pose_logger = generate_episode(env, policy, num_steps, debug)
 
             toc = time.time()
             total_time += (toc - tic)
@@ -112,7 +119,7 @@ def generate_episodes(env, policy, num_steps=None, num_episodes=None,
                 'In average each episode takes %.2f sec',
                 episode_index, toc - tic, total_time / (episode_index + 1))
 
-            yield episode_index, episode
+            yield episode_index, episode, pose_logger
 
             episode_index += 1
 

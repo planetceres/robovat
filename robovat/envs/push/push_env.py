@@ -236,6 +236,7 @@ class PushEnv(arm_env.ArmEnv):
         return observations
 
     def _create_reward_fns(self):
+    #TODO:pass on step info (action, prev-pose, next pose) to the reward function to create curosity-based reward
         """Initialize reward functions.
 
         Returns:
@@ -246,7 +247,7 @@ class PushEnv(arm_env.ArmEnv):
                 name='reward',
                 task_name=self.task_name,
                 layout_id=self.layout_id,
-                is_planning=False
+                is_planning=False,
             )
         ]
 

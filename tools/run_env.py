@@ -28,7 +28,8 @@ from robovat.simulation.simulator import Simulator
 from robovat.utils import time_utils
 from robovat.utils.logging import logger
 from robovat.utils.yaml_config import YamlConfig
-from tools.pose_log import log_pose
+from 
+#from tools.pose_log import log_pose
 
 
 def parse_args():
@@ -218,9 +219,9 @@ def main():
     # Generate and write episodes.
     logger.info('Start running...')
     env.reset()
-    log_pose()
+    #log_pose()
     num_episodes_this_file = 0
-    for episode_index, episode in generate_episodes(
+    for episode_index, episode, pose-logger in generate_episodes(
             env,
             policy,
             num_steps=args.num_steps,
@@ -253,6 +254,8 @@ def main():
 
         if args.pause:
             input('Press [Enter] to start a new episode.')
+
+        policy = improve_policy(pose-logger, policy)
 
 
 if __name__ == '__main__':

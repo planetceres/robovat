@@ -21,7 +21,6 @@ from robovat.utils.logging import logger
 
 def get_config_value(config):
     """Get the value of an configuration item.
-
     If the config is None, return None. If the config is a value, return the
     value. Otherwise, the config must by a tuple or list represents low and
     high values to sample the property from.
@@ -47,7 +46,6 @@ class RobotEnv(gym.Env):
                  config=None,
                  debug=False):
         """Initialize.
-
         Args:
             simulator: Instance of the simulator.
             config: Environment configuration.
@@ -177,7 +175,6 @@ class RobotEnv(gym.Env):
 
     def _create_observations(self):
         """Create observations.
-
         Returns:
             List of observations.
         """
@@ -185,7 +182,6 @@ class RobotEnv(gym.Env):
 
     def _create_reward_fns(self):
         """Initialize reward functions.
-
         Returns:
             List of reward functions.
         """
@@ -193,7 +189,6 @@ class RobotEnv(gym.Env):
 
     def _create_action_space(self):
         """Create the action space.
-
         Returns:
             The action space.
         """
@@ -236,7 +231,6 @@ class RobotEnv(gym.Env):
 
     def step(self, action):
         """Take a step.
-
         See parent class.
         """
         if self._done:
@@ -274,7 +268,6 @@ class RobotEnv(gym.Env):
 
     def get_observation(self):
         """Return the observation.
-
         Args:
             The observation data.
         """
@@ -290,7 +283,6 @@ class RobotEnv(gym.Env):
 
     def get_reward(self):
         """Return the reward.
-
         Args:
             reward: The sum of rewards as a float number.
             termination: The termination flag.

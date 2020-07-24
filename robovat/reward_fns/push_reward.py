@@ -34,7 +34,7 @@ def process_state(state):
 def dummy_reward_fn(state, next_state):
     state = process_state(state)
     next_state = process_state(next_state)
-
+    #print(state)
     if len(state.shape) == 2:
         shape = ()
     elif len(state.shape) == 3:
@@ -46,6 +46,9 @@ def dummy_reward_fn(state, next_state):
     termination = np.zeros_like(reward, dtype=np.bool)
     return reward, termination
 
+#TODO: define curosity reward using pose-estimation error
+#def forward_curosity_reward_fn(state, next_state):
+#####find_forward_error(pose_logger.uri, step-pose1, step-pose2, step-action)
 
 def get_tiles(centers, size, offset):
     tiles = [np.array(offset) + np.array(center) * size
@@ -279,9 +282,12 @@ def get_reward_fn(task_name,  # NOQA
                   use_time_penalty=True,
                   is_planning=False,
                   is_high_level=False):
-    if task_name is None or task_name == 'data_collection':
-        return dummy_reward_fn
 
+    if task_name == 'data_collection':
+        return dummy_reward_fn
+    if task_name is None: 
+        return dummy_reward_fn
+#        return forward_curosity_reward_fn
     if task_name == 'clearing':
         termination_fns = []
         goal_fns = [clearing_goal]
