@@ -15,14 +15,15 @@ from robovat.utils.logging import logger
 class SawyerSim(sawyer.Sawyer):
     """Sawyer wrapper in simulation."""
 
-    BASE_NAME = 'sawer_base'
-    ARM_NAME = 'sawer_arm'
-    HEAD_NAME = 'sawer_head'
+    BASE_NAME = 'sawyer_base'
+    ARM_NAME = 'sawyer_arm'
+    HEAD_NAME = 'sawyer_head'
 
     def __init__(self,
                  simulator,
                  pose=[[0, 0, 0], [0, 0, 0]],
                  joint_positions=None,
+                 root_dir=None,
                  config=None):
         """Initialize.
 
@@ -32,7 +33,7 @@ class SawyerSim(sawyer.Sawyer):
             joint_positions: The list of initial joint positions.
             config: The configuartion as a dictionary.
         """
-        super(SawyerSim, self).__init__(config=config)
+        super(SawyerSim, self).__init__(config=config, root_dir=root_dir)
 
         self._simulator = simulator
 

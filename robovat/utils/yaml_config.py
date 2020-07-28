@@ -101,6 +101,7 @@ class YamlConfig(object):
             config_dir = root_dir
 
         def include_repl(matchobj):
+            config_dir = os.path.abspath(os.path.join(filename, os.pardir))
             fname = os.path.join(config_dir, matchobj.group(1))
             with open(fname) as f:
                 return f.read()
