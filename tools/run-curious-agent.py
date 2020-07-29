@@ -104,7 +104,7 @@ def main():
     env.reset()
     #log_pose()
     num_episodes_this_file = 0
-    for episode_ind, episode, pose_logger in generate_episodes(
+    for episode_ind, episode in generate_episodes(
             env,
             policy,
             num_steps=args['num_steps'],
@@ -137,7 +137,7 @@ def main():
 
         if args['pause']:
             input('Press [Enter] to start a new episode.')
-        print(pose_logger.uri)
+        #print(pose_logger.uri)
 
 
 

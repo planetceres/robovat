@@ -15,7 +15,7 @@ import socket
 import time
 import traceback
 
-import tools.curious_agent
+#import tools.curious_agent
 
 from robovat.simulation.body import Body
 from robovat.utils import time_utils
@@ -45,9 +45,20 @@ def generate_episode(env, policy, num_steps=None, debug=False): #and  curious_ag
 
     observation = env.reset()
     pose_logger = Plogger()
+    pose_logger.end()
     pose_logger.start()
     
     while(1):
+
+        print('\n\n:Action space\n')
+        print(env.action_space)
+        #print('\n\n:obs space\n')
+        #print(env.observation_space.shape[0])
+        print('\n\n:oction-low\n')
+        print(env.action_space.low)
+
+
+
         #state1 = env.movable_bodies
         action = policy.action(observation) #TODO: move to outside the loop
         #action = curious_agent.choose_action()
@@ -77,7 +88,7 @@ def generate_episode(env, policy, num_steps=None, debug=False): #and  curious_ag
         if (num_steps is not None) and (t >= num_steps):
             break
         
-        find_forward_error(pose_logger.uri, step-pose1, step-pose2, step-action)
+        #find_forward_error(pose_logger.uri, step-pose1, step-pose2, step-action)
 
     episode = {
         'hostname': socket.gethostname(),
@@ -86,7 +97,7 @@ def generate_episode(env, policy, num_steps=None, debug=False): #and  curious_ag
     }
     pose_logger.end()
 
-    return episode, pose_logger
+    return episode
 
 
 def generate_episodes(env, policy, num_steps=None, num_episodes=None,
@@ -113,10 +124,10 @@ def generate_episodes(env, policy, num_steps=None, num_episodes=None,
             tic = time.time()
 
             if debug:
-                episode, pose_logger = generate_episode(env, policy, num_steps, debug)#pass on agent
+                episode = generate_episode(env, policy, num_steps, debug)#pass on agent
             else:
                 with time_utils.Timeout(timeout):
-                    episode, pose_logger = generate_episode(env, policy, num_steps, debug)#pass on agent
+                    episode= generate_episode(env, policy, num_steps, debug)#pass on agent
 
             toc = time.time()
             total_time += (toc - tic)
@@ -126,7 +137,7 @@ def generate_episodes(env, policy, num_steps=None, num_episodes=None,
                 'In average each episode takes %.2f sec',
                 episode_index, toc - tic, total_time / (episode_index + 1))
 
-            yield episode_index, episode, pose_logger
+            yield episode_index, episode
 
             episode_index += 1
 
