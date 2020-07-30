@@ -39,6 +39,7 @@ class Body(Entity):
                                           is_static=is_static)
         self._initial_relative_pose = pose
         self._is_static = is_static
+        self._mass = None
 
         self._links = [
             Link(self, link_ind)

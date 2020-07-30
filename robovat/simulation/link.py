@@ -28,6 +28,7 @@ class Link(Entity):
         self._uid = uid
         self._parent = body
         self._index = link_ind
+        self._mass = None
 
     @property
     def parent(self):
