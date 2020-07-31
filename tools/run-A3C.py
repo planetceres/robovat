@@ -27,6 +27,7 @@ import h5py
 
 from robovat import envs
 from robovat import policies
+from robovat.policies import A3C
 from robovat.io import hdf5_utils
 #from robovat.io.episode_generation_curious import generate_episodes
 from robovat.simulation.simulator import Simulator
@@ -34,7 +35,7 @@ from robovat.utils import time_utils
 from robovat.utils.logging import logger
 from robovat.utils.yaml_config import YamlConfig
 #from tools.pose_log import log_pose
-from robovat import agent  
+
 
 
 
