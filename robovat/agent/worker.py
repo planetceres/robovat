@@ -27,8 +27,8 @@ import matplotlib.pyplot as plt
 from robovat import envs
 from robovat import policies
 #from tools.pose_log import log_pose
-from robovat.A3C import network
-from robovat.A3C.constants import constants
+from robovat.agent import network
+from robovat.agent.constants import constants
 
 
 # worker class that inits own environment, trains on it and updloads weights to global net

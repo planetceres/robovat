@@ -12,9 +12,9 @@ import matplotlib.pyplot as plt
 from robovat import envs
 from robovat import policies
 from robovat import policies
-from robovat.A3C import worker as w
-from robovat.A3C import run
-from robovat.A3C.constants import constants
+from robovat.agent import worker as w
+from robovat.agent import run
+from robovat.agent.constants import constants
 
 
 

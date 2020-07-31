@@ -34,7 +34,7 @@ from robovat.utils import time_utils
 from robovat.utils.logging import logger
 from robovat.utils.yaml_config import YamlConfig
 #from tools.pose_log import log_pose
-from robovat import A3C as agent 
+from robovat import agent  
 
 
 
