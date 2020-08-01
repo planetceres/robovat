@@ -24,10 +24,8 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import h5py
 
-
 from robovat import envs
 from robovat import policies
-from robovat.policies import A3C
 from robovat.io import hdf5_utils
 #from robovat.io.episode_generation_curious import generate_episodes
 from robovat.simulation.simulator import Simulator
@@ -35,9 +33,6 @@ from robovat.utils import time_utils
 from robovat.utils.logging import logger
 from robovat.utils.yaml_config import YamlConfig
 #from tools.pose_log import log_pose
-
-
-
 
 
 #PARAMETERS
@@ -142,12 +137,12 @@ def main():
     num_episodes_this_file = 0
 
     #with tf.device("/cpu:0"):
-    global_ac = agent.ACNet(GLOBAL_NET_SCOPE,sess, env)  # we only need its params
+    #global_ac = policies.ACNet(GLOBAL_NET_SCOPE,sess, env)  # we only need its params
     workers = []
     # Create workers
     for i in range(N_WORKERS):
         i_name = 'W_%i' % i   # worker name
-        workers.append(agent.Worker(i_name, global_ac,sess, env))
+        workers.append(policies.Worker(i_name, global_ac,sess, env))
 
     coord = tf.train.Coordinator()
     sess.run(tf.compat.v1.global_variables_initializer())
@@ -179,7 +174,7 @@ def main():
 
     worker_threads = []
     for worker in workers: #start workers
-        job = lambda: agent.worker.work(coord)
+        job = lambda: policies.worker.work(coord)
         t = threading.Thread(target=job)
         t.start()
         worker_threads.append(t)
@@ -189,7 +184,6 @@ def main():
     plt.xlabel('step')
     plt.ylabel('total moving reward')
     plt.show()
-
 
 
 if __name__ == '__main__':
