@@ -20,6 +20,9 @@ import uuid
 from builtins import input
 
 import numpy as np
+import A3C_network as nw
+import A3C_worker as w
+
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import h5py
@@ -31,9 +34,9 @@ from robovat.io import hdf5_utils
 from robovat.simulation.simulator import Simulator
 from robovat.utils import time_utils
 from robovat.utils.logging import logger
-from robovat.utils.yaml_config import YamlConfig
-from A3C.network import ACNet
-from A3C.worker import Worker 
+from robovat.utils.yaml_aconfig import YamlConfig
+#from tools.A3C_network import ACNet
+#from tools.A3c_worker import Worker 
 #from tools.pose_log import log_pose
 
 
@@ -140,12 +143,12 @@ def main():
     num_episodes_this_file = 0
 
     #with tf.device("/cpu:0"):
-    global_ac = ACNet(GLOBAL_NET_SCOPE,sess, env)  # we only need its params
+    global_ac = nw.ACNet(GLOBAL_NET_SCOPE,sess, env)  # we only need its params
     workers = []
     # Create workers
     for i in range(N_WORKERS):
         i_name = 'W_%i' % i   # worker name
-        worker = Worker(i_name, global_ac ,sess , env)
+        worker = w.Worker(i_name, global_ac ,sess , env)
         workers.append(worker)
 
     coord = tf.train.Coordinator()
