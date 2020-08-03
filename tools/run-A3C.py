@@ -32,8 +32,8 @@ from robovat.simulation.simulator import Simulator
 from robovat.utils import time_utils
 from robovat.utils.logging import logger
 from robovat.utils.yaml_config import YamlConfig
-from robovat.A3C.network import ACNet
-from robovat.A3C.worker import Worker 
+from A3C.network import ACNet
+from A3C.worker import Worker 
 #from tools.pose_log import log_pose
 
 
