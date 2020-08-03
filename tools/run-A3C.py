@@ -32,6 +32,8 @@ from robovat.simulation.simulator import Simulator
 from robovat.utils import time_utils
 from robovat.utils.logging import logger
 from robovat.utils.yaml_config import YamlConfig
+from robovat.A3C.network import ACNet
+from robovat.A3C.worker import Worker 
 #from tools.pose_log import log_pose
 
 
@@ -138,12 +140,12 @@ def main():
     num_episodes_this_file = 0
 
     #with tf.device("/cpu:0"):
-    global_ac = policies.ACNet(GLOBAL_NET_SCOPE,sess, env)  # we only need its params
+    global_ac = ACNet(GLOBAL_NET_SCOPE,sess, env)  # we only need its params
     workers = []
     # Create workers
     for i in range(N_WORKERS):
         i_name = 'W_%i' % i   # worker name
-        worker = policies.Worker(i_name, global_ac ,sess , env)
+        worker = Worker(i_name, global_ac ,sess , env)
         workers.append(worker)
 
     coord = tf.train.Coordinator()

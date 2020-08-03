@@ -12,10 +12,6 @@ import matplotlib.pyplot as plt
 from robovat import envs
 from robovat import policies
 from robovat import policies
-from robovat.agent import worker as w
-from robovat.agent import run
-from robovat.agent.constants import constants
-
 
 #from tools.pose_log import log_pose
 
