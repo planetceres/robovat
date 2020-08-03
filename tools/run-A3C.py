@@ -61,6 +61,7 @@ args = {'env': 'PushEnv', 'policy': 'RandomPolicy', 'env_config':'configs/envs/p
 
 #TODO: figure the next two lines out! 
 
+
 def parse_config_files_and_bindings(args):
     if args['env_config'] is None:
         env_config = None
@@ -137,12 +138,13 @@ def main():
     num_episodes_this_file = 0
 
     #with tf.device("/cpu:0"):
-    #global_ac = policies.ACNet(GLOBAL_NET_SCOPE,sess, env)  # we only need its params
+    global_ac = policies.ACNet(GLOBAL_NET_SCOPE,sess, env)  # we only need its params
     workers = []
     # Create workers
     for i in range(N_WORKERS):
         i_name = 'W_%i' % i   # worker name
-        workers.append(policies.Worker(i_name, global_ac,sess, env))
+        worker = policies.Worker(i_name, global_ac ,sess , env)
+        workers.append(worker)
 
     coord = tf.train.Coordinator()
     sess.run(tf.compat.v1.global_variables_initializer())

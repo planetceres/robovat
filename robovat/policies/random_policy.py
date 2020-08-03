@@ -21,3 +21,5 @@ class RandomPolicy(policy.Policy):
             action: The action of the current step.
         """
         return self.env.action_space.sample()
+
+

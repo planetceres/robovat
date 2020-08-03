@@ -255,7 +255,7 @@ def main():
         if args.pause:
             input('Press [Enter] to start a new episode.')
 
-        policy = improve_policy(pose-logger, policy)
+        #policy = improve_policy(pose-logger, policy)
 
 
 if __name__ == '__main__':
