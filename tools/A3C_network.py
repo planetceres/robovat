@@ -2,6 +2,8 @@
 
 """
 Network for the Actor Critic
+
+Modified code from GitHub stefanbo92/A3C-Continuous
 """
 
 import numpy as np
@@ -13,32 +15,38 @@ from robovat import envs
 from robovat import policies
 from robovat import policies
 import A3C_worker as w
+import run_A3C 
 #from robovat.agent import run
 #from robovat.agent.constants import constants
+
+
+LR_A = 0.0001               # learning rate for actor
+LR_C = 0.001                # learning rate for critic
+ENTROPY_BETA = 0.01         # entropy factor
 
 
 #from tools.pose_log import log_pose
 
 class ACNet(object):
-    def __init__(self, scope, sess, globalAC=None):       
+    def __init__(self, scope, sess, env, globalAC=None):       
         self.sess=sess
-        self.actor_optimizer = tf.compat.v1.train.RMSPropOptimizer(LR_A, name='RMSPropA')  # optimizer for the actor
-        self.critic_optimizer = tf.compat.v1.train.RMSPropOptimizer(LR_C, name='RMSPropC') # optimizer for the critic
+        self.actor_optimizer = tf1.train.RMSPropOptimizer(LR_A, name='RMSPropA')  # optimizer for the actor
+        self.critic_optimizer = tf1.train.RMSPropOptimizer(LR_C, name='RMSPropC') # optimizer for the critic
         self.env = env
         self.N_A = 4
         #env.max_movable_bodies
         self.N_S = 1
         self.A_BOUND = [env.action_space.low, env.action_space.high] # action bounds
-        if scope == GLOBAL_NET_SCOPE:   # get global network
-            with tf.compat.v1.variable_scope(scope):
-                tf.compat.v1.disable_eager_execution()
-                self.s = tf.compat.v1.placeholder(tf.float32, [None, self.N_S], 'S')       # state
+        if scope == 'Global_Net':   # get global network
+            with tf1.variable_scope(scope):
+                tf1.disable_eager_execution()
+                self.s = tf1.placeholder(tf.float32, [None, self.N_S], 'S')       # state
                 self.a_params, self.c_params = self._build_net(scope)[-2:]  # parameters of actor and critic net
         else:   # local net, calculate losses
-            with tf.compat.v1.variable_scope(scope):
-                self.s = tf.compat.v1.placeholder(tf.float32, [None, self.N_S], 'S')            # state
-                self.a_his = tf.compat.v1.placeholder(tf.float32, [None, self.N_A], 'A')        # action
-                self.v_target = tf.compat.v1.placeholder(tf.float32, [None, 1], 'Vtarget') # v_target value
+            with tf1.variable_scope(scope):
+                self.s = tf1.placeholder(tf.float32, [None, self.N_S], 'S')            # state
+                self.a_his = tf1.placeholder(tf.float32, [None, self.N_A], 'A')        # action
+                self.v_target = tf1.placeholder(tf.float32, [None, 1], 'Vtarget') # v_target value
 
                 mu, sigma, self.v, self.a_params, self.c_params = self._build_net(scope) # get mu and sigma of estimated action from neural net
 
@@ -53,12 +61,13 @@ class ACNet(object):
 
                 with tf.name_scope('a_loss'):
                     log_prob = normal_dist.log_prob(self.a_his)
+        # Assume atari.l_dist.log_prob(self.a_his)
                     exp_v = log_prob * td
                     entropy = normal_dist.entropy()  # encourage exploration
                     self.exp_v = ENTROPY_BETA * entropy + exp_v
                     self.a_loss = tf.reduce_mean(-self.exp_v)
 
-                with tf.name_scope('choose_a'):  # use local params to choose action
+                with tf.name_scope('choose_a'):  # use local params tvo choose action
                     self.A = tf.clip_by_value(tf.squeeze(normal_dist.sample(1), axis=0), self.A_BOUND[0], self.A_BOUND[1]) # sample a action from distribution
                 with tf.name_scope('local_grad'):
                     self.a_grads = tf.gradients(self.a_loss, self.a_params) #calculate gradients for the network weights
@@ -74,15 +83,15 @@ class ACNet(object):
 
     def _build_net(self, scope): # neural network structure of the actor and critic
         w_init = tf.random_normal_initializer(0., .1)
-        with tf.compat.v1.variable_scope('actor'):
-            l_a = tf.compat.v1.layers.dense(self.s, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
-            mu = tf.compat.v1.layers.dense(l_a, self.N_A, tf.nn.tanh, kernel_initializer=w_init, name='mu') # estimated action value
-            sigma = tf.compat.v1.layers.dense(l_a, self.N_A, tf.nn.softplus, kernel_initializer=w_init, name='sigma') # estimated variance
-        with tf.compat.v1.variable_scope('critic'):
-            l_c = tf.compat.v1.layers.dense(self.s, 100, tf.nn.relu6, kernel_initializer=w_init, name='lc')
-            v = tf.compat.v1.layers.dense(l_c, 1, kernel_initializer=w_init, name='v')  # estimated value for state
-        a_params = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/actor')
-        c_params = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/critic')
+        with tf1.variable_scope('actor'):
+            l_a = tf1.layers.dense(self.s, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
+            mu = tf1.layers.dense(l_a, self.N_A, tf.nn.tanh, kernel_initializer=w_init, name='mu') # estimated action value
+            sigma = tf1.layers.dense(l_a, self.N_A, tf.nn.softplus, kernel_initializer=w_init, name='sigma') # estimated variance
+        with tf1.variable_scope('critic'):
+            l_c = tf1.layers.dense(self.s, 100, tf.nn.relu6, kernel_initializer=w_init, name='lc')
+            v = tf1.layers.dense(l_c, 1, kernel_initializer=w_init, name='v')  # estimated value for state
+        a_params = tf1.get_collection(tf1.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/actor')
+        c_params = tf1.get_collection(tf1.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/critic')
         return mu, sigma, v, a_params, c_params
 
     def update_global(self, feed_dict):  # run by a local

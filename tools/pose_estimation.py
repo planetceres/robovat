@@ -17,6 +17,9 @@ import tensorflow as tf
 
 from tensorflow import keras
 from tensorflow.keras import layers
+from robovat.simulation.body import Body
+from robovat.math import Pose 
+
 
 import tensorflow_docs as tfdocs
 import tensorflow_docs.plots
@@ -192,7 +195,16 @@ def predict_for(unknown, dataset, test_dataset = None):
 
     return test_predictions, test_labels
 
-def find_forward_error(path, step-pose1, step-pose2, step-action):
+def find_forward_error(path, bodies_i, bodies_f, step_action):
+
+    list(zip(bodies_i, bodies_f))
+    for (p1, p2) in list:
+         reward += find_forward_error(path, p1, p2, step_action)
+    return reward/ len(list)
+    
+
+def find_forward_error(path, step_pose1, step_pose2, step_action):
+
     #TODO: make sure you delete all previous experiments using 'mlflow gc' 
     list = os.listdir(path) 
     num_files = len(list)  
@@ -218,9 +230,9 @@ def find_forward_error(path, step-pose1, step-pose2, step-action):
                             'a1': action[:, 0], 'a2': action[:, 1], 'a3': action[:, 2], 'a4': action[:, 3], 'X2': final_pose[:, 0], 'Y2': final_pose[:, 1], 'Z2': final_pose[:, 2], 
                             'roll2': final_pose[:, 3], 'pitch2': final_pose[:, 4], 'yaw2': final_pose[:, 5]})
 
-    dataset2 = pd.DataFrame({'X1': step-pose1[:, 0], 'Y1': step-pose1[:, 1], 'Z1': step-pose1[:, 2], 'roll1': step-pose1[:, 3], 'pitch1': step-pose1[:, 4], 'yaw1': step-pose1[:, 5],
-                            'a1': step-action[:, 0], 'a2': step-action[:, 1], 'a3': step-action[:, 2], 'a4': step-action[:, 3], 'X2': step-pose2[:, 0], 'Y2': step-pose2[:, 1], 'Z2': step-pose2[:, 2], 
-                            'roll2': step-pose2[:, 3], 'pitch2': step-pose2[:, 4], 'yaw2': step-pose2[:, 5]})
+    dataset2 = pd.DataFrame({'X1': step_pose1[:, 0], 'Y1': step_pose1[:, 1], 'Z1': step_pose1[:, 2], 'roll1': step_pose1[:, 3], 'pitch1': step_pose1[:, 4], 'yaw1': step_pose1[:, 5],
+                            'a1': step_action[:, 0], 'a2': step_action[:, 1], 'a3': step_action[:, 2], 'a4': step_action[:, 3], 'X2': step_pose2[:, 0], 'Y2': step_pose2[:, 1], 'Z2': step_pose2[:, 2], 
+                            'roll2': step_pose2[:, 3], 'pitch2': step_pose2[:, 4], 'yaw2': step_pose2[:, 5]})
 
 
 
@@ -234,21 +246,20 @@ def find_forward_error(path, step-pose1, step-pose2, step-action):
     pitch, predicted_pitch = predict_for('pitch2',dataset, dataset2)
     yaw, predicted_yaw = predict_for('yaw2',dataset, dataset2)
 
-    '''Save individual data files of each final pose component estimate vs ground truth'''
+    pose = [X, Y, Z, roll, pitch]
+    est = [predicted_X, predicted_Y, predicted_Z, predicted_roll, predicted_pitch]
+    
+    
+    li = []
+    for i in range(0, 5):
+        li.append((pose[i], est[i]))
+    reward = 0
+    for l in li:
+        if (pose[i] != est[i]):
+            reward += abs((pose[i]-est[i])/pose[i]) 
 
-    X_result= np.column_stack((X, predicted_X))
-    print(str(abs(X - predicted_X)))
-    Y_result= np.column_stack((Y, predicted_Y))
-    np.savetxt("Y-result.csv", Y_result, delimiter=",")
-    Z_result= np.column_stack((Z, predicted_Z))
-    np.savetxt("Z-result.csv", Z_result, delimiter=",")
-    roll_result= np.column_stack((roll, predicted_roll))
-    np.savetxt("roll-result.csv", roll_result, delimiter=",")
-    pitch_result= np.column_stack((pitch, predicted_pitch))
-    np.savetxt("pitch-result.csv", pitch_result, delimiter=",")
-    yaw_result= np.column_stack((yaw, predicted_yaw))
-    np.savetxt("yaw-result.csv", yaw_result, delimiter=",")
-
+    return reward/5
+       
 
 def main():
 

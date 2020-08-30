@@ -46,6 +46,13 @@ def dummy_reward_fn(state, next_state):
     termination = np.zeros_like(reward, dtype=np.bool)
     return reward, termination
 
+def curosity_reward_fn(state, next_state):
+
+    state = process_state(state)
+    next_state = process_state(next_state)
+    
+    
+    
 #TODO: define curosity reward using pose-estimation error
 #def forward_curosity_reward_fn(state, next_state):
 #####find_forward_error(pose_logger.uri, step-pose1, step-pose2, step-action)
@@ -287,7 +294,7 @@ def get_reward_fn(task_name,  # NOQA
         return dummy_reward_fn
     if task_name is None: 
         return dummy_reward_fn
-#        return forward_curosity_reward_fn
+#       return forward_curosity_reward_fn
     if task_name == 'clearing':
         termination_fns = []
         goal_fns = [clearing_goal]

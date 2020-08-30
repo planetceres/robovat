@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 """
-Network for the Actor Critic
+Worker class for the Actor Critic
+
+Modified code from GitHub stefanbo92/A3C-Continuous
 """
 
 from __future__ import absolute_import
@@ -19,6 +21,7 @@ from robovat.simulation.body import Body
 from robovat.utils import time_utils
 from robovat.utils.logging import logger
 from pose_log import logger as Plogger
+from pose_estimation import find_forward_error as forward_r
 
 import numpy as np
 import tensorflow as tf
@@ -28,26 +31,35 @@ from robovat import envs
 from robovat import policies
 #from tools.pose_log import log_pose
 import A3C_network
-import A3C_constants
+import run_A3C
+import A3C_config as config
 
+
+MAX_GLOBAL_EP = 2000        # total number of episodes
 
 # worker class that inits own environment, trains on it and updloads weights to global net
 class Worker(object):
-    def __init__(self, name, globalAC, sess, env):
-        self.env =  env.reset()  # make environment for each worker
+    def __init__(self, name, globalAC, sess, env):            
+        self.env = env._reset()  # make environment for each worker
         self.name = name
-        self.AC = network.ACNet(name, sess, env, globalAC) # create ACNet for each worker
+        self.AC = A3C_network.ACNet(name, sess, env, globalAC) # create ACNet for each worker
         self.sess=sess
-   
-    def work(self, coord):
+        #self.coord = coord
 
-        global global_rewards, global_episodes
+
+    def work(self, *tup):
+        (coord, number) = tup
         total_step = 1
         buffer_s, buffer_a, buffer_r = [], [], []
-        while not coord.should_stop() and global_episodes < MAX_GLOBAL_EP:
-            s = self.env.reset()
+        while not coord.should_stop() and config.global_episodes < MAX_GLOBAL_EP:
+            print('\n\n\n %s \n\n\n', self.name)
+            s = self.env._reset()
+
+            #self.env._reset_scene()
             ep_r = 0
             for ep_t in range(MAX_EP_STEP):
+
+                bodies_i = env.movable_bodies() 
 
                 if self.name == 'W_0':
                     pose_logger = Plogger()
@@ -56,6 +68,10 @@ class Worker(object):
                     #self.env.render()
                 a = self.AC.choose_action(s)         # estimate stochastic action based on policy 
                 s_, r, done, info = self.env.step(a) # make step in environment
+                bodies_f = env.movable_bodies() 
+
+                r = forward_r('mlruns', bodies_i, bodies_f, a)
+
                 pose_logger.log(info, env.movable_bodies, a)
                 #logger.info(
                 #'Episode %d finished in %.2f sec. '
@@ -64,6 +80,7 @@ class Worker(object):
                 done = True if ep_t == MAX_EP_STEP - 1 else False
 
                 ep_r += r
+                logger.info('Worker %s Episode reward: %f', self.name[-1], ep_r) 
                 # save actions, states and rewards in buffer
                 buffer_s.append(s)          
                 buffer_a.append(a)
@@ -95,15 +112,15 @@ class Worker(object):
                 s = s_
                 total_step += 1
                 if done:
-                    if len(global_rewards) < 5:  # record running episode reward
-                        global_rewards.append(ep_r)
+                    if len(config.global_rewards) < 5:  # record running episode reward
+                        config.global_rewards.append(ep_r)
                     else:
-                        global_rewards.append(ep_r)
-                        global_rewards[-1] =(np.mean(global_rewards[-5:])) # smoothing 
+                        config.global_rewards.append(ep_r)
+                        config.global_rewards[-1] =(np.mean(config.global_rewards[-5:])) # smoothing 
                     print(
                         self.name,
                         "Ep:", global_episodes,
-                        "| Ep_r: %i" % global_rewards[-1],
+                        "| Ep_r: %i" % config.global_rewards[-1],
                           )
                     global_episodes += 1
                     break
