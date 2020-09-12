@@ -20,6 +20,7 @@ import traceback
 from robovat.simulation.body import Body
 from robovat.utils import time_utils
 from robovat.utils.logging import logger
+from robovat.simulation.body import Body
 from tools.pose_log import logger as Plogger
 
 
@@ -54,14 +55,14 @@ def generate_episode(env, policy, num_steps=None, debug=False): #and  curious_ag
         print(env.action_space)
         #print('\n\n:obs space\n')
         #print(env.observation_space.shape[0])
-        print('\n\n:oction-low\n')
+        print('\n\n:Action-low\n')
         print(env.action_space.low)
-
 
 
         #state1 = env.movable_bodies
         action = policy.action(observation) #TODO: move to outside the loop
         #action = curious_agent.choose_action()
+        bodies_i = env.movable_bodies
 
         new_observation, reward, done, info = env.step(action)
         #TODO: pass on step info (action, prev-pose, next pose) to the env so env can pass them on to reward function to create curosity-based reward
@@ -73,6 +74,10 @@ def generate_episode(env, policy, num_steps=None, debug=False): #and  curious_ag
             }
         #TODO:findout when to make the agent learn...at the end of each step? timer countdown?
         #curious_agent.learn() 
+        bodies_f = env.movable_bodies 
+        r += forward_r('mlruns', bodies_i, bodies_f, a)
+        r /= 2
+
         transitions.append(transition)
         observation = new_observation
         

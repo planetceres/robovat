@@ -70,7 +70,9 @@ class Worker(object):
                 s_, r, done, info = self.env.step(a) # make step in environment
                 bodies_f = env.movable_bodies() 
 
-                r = forward_r('mlruns', bodies_i, bodies_f, a)
+                r += forward_r('mlruns', bodies_i, bodies_f, a)
+                #TODO:learn how to normalize the clearing reward
+                r = r/2
 
                 pose_logger.log(info, env.movable_bodies, a)
                 #logger.info(
@@ -84,7 +86,8 @@ class Worker(object):
                 # save actions, states and rewards in buffer
                 buffer_s.append(s)          
                 buffer_a.append(a)
-                buffer_r.append((r+8)/8)    # normalize reward
+                buffer_r.append(r) 
+                #buffer_r.append((r+8)/8)    # normalize reward
                 #TODO:figure out reward and change this
 
                 if total_step % UPDATE_GLOBAL_ITER == 0 or done:   # update global and assign to local net

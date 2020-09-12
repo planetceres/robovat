@@ -95,24 +95,24 @@ class PushEnv(arm_env.ArmEnv):
         self.num_movable_bodies = None
         self.movable_body_mask = None
 
-       if self.is_simulation:
-           pass
-       '''
-            movable_name = self.config.MOVABLE_NAME.upper()
-            self.movable_config = self.config.MOVABLE[movable_name]
-            self.movable_bodies = []
-            self.movable_paths = []
-            for pattern in self.movable_config.PATHS:
-                if not os.path.isabs(pattern):
-                    pattern = os.path.join(self.simulator.assets_dir, pattern)
-                self.movable_paths += glob.glob(pattern)
-            assert len(self.movable_paths) > 0
-            self.target_movable_paths = []
-            for pattern in self.movable_config.TARGET_PATHS:
-                if not os.path.isabs(pattern):
-                    pattern = os.path.join(self.simulator.assets_dir, pattern)
-                self.target_movable_paths += glob.glob(pattern)
-            assert len(self.target_movable_paths) > 0'''
+        if self.is_simulation:
+         
+             movable_name = self.config.MOVABLE_NAME.upper()
+             self.movable_config = self.config.MOVABLE[movable_name]
+             self.movable_bodies = []
+             self.movable_paths = []
+             for pattern in self.movable_config.PATHS:
+                 if not os.path.isabs(pattern):
+                     pattern = os.path.join(self.simulator.assets_dir, pattern)
+                 self.movable_paths += glob.glob(pattern)
+             assert len(self.movable_paths) > 0
+             self.target_movable_paths = []
+             for pattern in self.movable_config.TARGET_PATHS:
+                 if not os.path.isabs(pattern):
+                     pattern = os.path.join(self.simulator.assets_dir, pattern)
+                 self.target_movable_paths += glob.glob(pattern)
+             assert len(self.target_movable_paths) > 0
+
         else:
             self.movable_config = None
             self.movable_bodies = None
@@ -191,15 +191,14 @@ class PushEnv(arm_env.ArmEnv):
         # the real world, the segmented point clouds are computed using
         # clustering algorithms.
         if self.is_simulation:
-            pass
 
-        '''    observations += [
+            observations += [
                 camera_obs.SegmentedPointCloudObs(
                     self.camera,
                     num_points=self.config.OBS.NUM_POINTS,
                     num_bodies=self.max_movable_bodies,
                     name='point_cloud'),
-            ]'''
+            ]
 
         else:
             observations += [
@@ -219,8 +218,7 @@ class PushEnv(arm_env.ArmEnv):
                 pose_obs.PoseObs(
                     num_bodies=self.max_movable_bodies,
                     modality='position',
-                    name='position'),reset
-                attribute_obs.FlagObs('is_safe', name='is_safe'),
+                    name='position'),attribute_obs.FlagObs('is_safe', name='is_safe'),
                 attribute_obs.FlagObs('is_effective', name='is_effective'),
             ]
 
@@ -318,7 +316,7 @@ class PushEnv(arm_env.ArmEnv):
                                 self.recording_output_path)
 
             name = '%s_%s.avi' % (
-                hostname, time_utils.get_timestamp_as_string())stopping threads
+                hostname, time_utils.get_timestamp_as_string())
 
             resolution = (self.config.RECORDING.CAMERA.WIDTH,
                           self.config.RECORDING.CAMERA.HEIGHT)
@@ -341,7 +339,7 @@ class PushEnv(arm_env.ArmEnv):
         # Simulation.
         if self.is_simulation:
             pass
-        '''
+        
             self.num_movable_bodies = np.random.randint(
                 low=self.min_movable_bodies,
                 high=self.max_movable_bodies + 1)
@@ -363,7 +361,7 @@ class PushEnv(arm_env.ArmEnv):
                         layout.offset,
                         z_offset=0.0015 - 0.025,
                         rgba=layout.goal_rgba)
-      '''
+      
         else:
             self.num_movable_bodies = self.max_movable_bodies
             logger.info('Assume there are %d movable objects on the table.',

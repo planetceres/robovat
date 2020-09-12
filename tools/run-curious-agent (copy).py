@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 
 """
-A3C implementing a pushing task
-
-Modified code from GitHub stefanbo92/A3C-Continuous
-
+Curious Agent implementing a pushing task
 """
 
 from __future__ import absolute_import
@@ -23,33 +20,26 @@ import uuid
 from builtins import input
 
 import numpy as np
-import A3C_network as nw
-import A3C_worker as w
-import A3C_config as config
-
 import matplotlib.pyplot as plt
-import tensorflow as tf
 import h5py
 
+import _init_paths  # NOQA
 from robovat import envs
 from robovat import policies
 from robovat.io import hdf5_utils
-#from robovat.io.episode_generation_curious import generate_episodes
+from robovat.io.episode_generation_curious import generate_episodes
 from robovat.simulation.simulator import Simulator
 from robovat.utils import time_utils
 from robovat.utils.logging import logger
 from robovat.utils.yaml_config import YamlConfig
-
-#from tools.A3C_network import ACNet
-#from tools.A3c_worker import Worker 
 #from tools.pose_log import log_pose
+
 
 #PARAMETERS
 OUTPUT_GRAPH = True         # safe logs
 RENDER=True                 # render one worker
 LOG_DIR = './log'           # savelocation for logs
 N_WORKERS = multiprocessing.cpu_count() # number of workers
-N_WORKERS = 1
 MAX_EP_STEP = 200           # maxumum number of steps per episode
 MAX_GLOBAL_EP = 2000        # total number of episodes
 GLOBAL_NET_SCOPE = 'Global_Net'
@@ -59,17 +49,13 @@ ENTROPY_BETA = 0.01         # entropy factor
 LR_A = 0.0001               # learning rate for actor
 LR_C = 0.001                # learning rate for critic
 
-#global global_rewards = []
-#global global_episodes = 0
-
 #TODO: check the config and env and policy config files
 #TODO: check the success_thresh and MAX_STEPS
 
- 
-args = {'env': 'PushEnv', 'policy': 'RandomPolicy', 'env_config':'configs/envs/push_env.yaml', 
-        'policy_config':'configs/policies/push_policy.yaml', 'config_bindings':"{'TASK_NAME': 'clearing','SUCCESS_THRESH':2 ,'MAX_STEPS:':200}",
-        'use_simulator': 0, 'assets_dir':'./assets', 'output_dir':None, 'num_steps':None,
-        'num_episodes':'None', 'num_episodes_per_file': 1000, 'debug': False, 'worker_id': 0, 'seed': None,
+args = {'env': 'PushEnv', 'policy': 'HeuristicPushPolicy', 'env_config':'configs/envs/push_env.yaml', 
+        'policy_config':'configs/policies/heuristic_push_policy.yaml', 'config_bindings':"{'SUCCESS_THRESH':2 ,'MAX_STEPS:':200}",
+        'use_simulator': 1, 'assets_dir':'./assets', 'output_dir':None, 'num_steps':None,
+        'num_episodes':'None', 'num_episodes_per_file': 1000, 'debug': 1, 'worker_id': 0, 'seed': None,
         'pause': False, 'timeout':120 }
 
 #TODO: figure the next two lines out! 
@@ -93,9 +79,14 @@ def parse_config_files_and_bindings(args):
 
     return env_config, policy_config
 
+
+
 def main():
 
-    sess = tf.compat.v1.Session()
+    global_rewards = []
+    global_episodes = 0
+
+    sess = tf.Session()
     
     # Configuration.
     env_config, policy_config = parse_config_files_and_bindings(args)
@@ -115,13 +106,14 @@ def main():
 
     # Environment.
     env_class = getattr(envs, args['env'])
-    env = env_class(simulator,
+    env = env_class(simulator=simulator,
                     config=env_config,
-                   debug=args['debug'])
+                    debug=args['debug'])
 
-    #N_S = env.observation_space.shape[0]                    # number of states
-    #N_A = env.action_space.shape[0]                        # number of actions
-    
+    N_S = env.observation_space.shape[0]                    # number of states
+    N_A = env.action_space.shape[0]                         # number of actions
+    A_BOUND = [env.action_space.low, env.action_space.high] # action bounds
+
     # Policy.
     #policy_class = getattr(policies, args['policy'])
     #policy = policy_class(env=env, config=policy_config)
@@ -142,81 +134,56 @@ def main():
     #log_pose()
     num_episodes_this_file = 0
 
-    coord = tf.compat.v1.train.Coordinator()
-
     with tf.device("/cpu:0"):
-        global_ac = nw.ACNet(GLOBAL_NET_SCOPE, sess , env)  # we only need its params
+        global_ac = ACNet(GLOBAL_NET_SCOPE,sess)  # we only need its params
         workers = []
         # Create workers
-        for i in range(0, N_WORKERS):
-            print('\n\n\n\n worker %d \n\n\n\n', (i))
-
-       # Simulator.
-            if args['use_simulator']:
-                simulator = Simulator(worker_id=i+1,
-                                      use_visualizer=bool(args['debug']),
-                                      assets_dir=args['assets_dir'])
-            else:
-                simulator = None
-
-            env = env_class(simulator,
-                            config=env_config,
-                            debug=args['debug'])
-
+        for i in range(N_WORKERS):
             i_name = 'W_%i' % i   # worker name
-            worker = w.Worker(i_name, global_ac ,sess , env)
-            workers.append(worker)
-  
-    #coord = tf.compat.v1.train.Coordinator()
-    
+            workers.append(Worker(i_name, global_ac,sess))
 
-    sess.run(tf.compat.v1.global_variables_initializer())
+    coord = tf.train.Coordinator()
+    sess.run(tf.global_variables_initializer())
 
     if OUTPUT_GRAPH: # write log file
         if os.path.exists(LOG_DIR):
             shutil.rmtree(LOG_DIR)
-        tf.compat.v1.summary.FileWriter(LOG_DIR, sess.graph)
+        tf.summary.FileWriter(LOG_DIR, sess.graph)
 
         
-    '''#Append the episode to the file.
-        logger.info('Saving episode %d to file %s (%d / %d)...',
-                     episode_index,
-                    output_path,
-                     num_episodes_this_file,
-                     args['num_episodes_per_file'])
+     # Append the episode to the file.
+     #       logger.info('Saving episode %d to file %s (%d / %d)...',
+     #                  episode_index,
+     #                   output_path,
+     #                   num_episodes_this_file,
+     #                  args['num_episodes_per_file'])
 
-        with h5py.File(output_path, 'a') as fout:
-            name = str(uuid.uuid4())
-            group = fout.create_group(name)
-            hdf5_utils.write_data_to_hdf5(group, episode)'''
+     #       with h5py.File(output_path, 'a') as fout:
+     #           name = str(uuid.uuid4())
+     #          group = fout.create_group(name)
+     #           hdf5_utils.write_data_to_hdf5(group, episode)
 
-    num_episodes_this_file += 1
-    num_episodes_this_file %= args['num_episodes_per_file']
+     #  num_episodes_this_file += 1
+     #   num_episodes_this_file %= args['num_episodes_per_file']
 
-     #    if args['pause']:
+     #   if args['pause']:
      #       input('Press [Enter] to start a new episode.')
      #  print(pose_logger.uri)
 
     worker_threads = []
-    
     for worker in workers: #start workers
-
-        #job = lambda: worker.work()
-        tup = (coord, 0 )
-        ''''p = multiprocessing.Process(target=spawn)
-        p.start()
-        coord.join(p) # this line allows you to wait for processes'''
-       
-        t = threading.Thread(target= worker.work, args = tup)
-        worker_threads.append(t)
-    coord.join(worker_threads)  # wait for termination of workers'''
-    for t in worker_threads:
+        job = lambda: worker.work()
+        t = threading.Thread(target=job)
         t.start()
+        worker_threads.append(t)
+    coord.join(worker_threads)  # wait for termination of workers
     
-    plt.plot(np.arange(len(config.global_rewards)), config.global_rewards) # plot rewards
+    plt.plot(np.arange(len(global_rewards)), global_rewards) # plot rewards
     plt.xlabel('step')
     plt.ylabel('total moving reward')
     plt.show()
+
+
 
 if __name__ == '__main__':
     main()
