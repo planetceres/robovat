@@ -23,7 +23,6 @@ import uuid
 from builtins import input
 
 import numpy as np
-import A3C_network as nw
 import A3C_worker as w
 import A3C_config as config
 
@@ -34,6 +33,7 @@ import h5py
 from robovat import envs
 from robovat import policies
 from robovat.io import hdf5_utils
+from Agent.A3C import A3C_network as nw
 #from robovat.io.episode_generation_curious import generate_episodes
 from robovat.simulation.simulator import Simulator
 from robovat.utils import time_utils
