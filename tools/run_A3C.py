@@ -31,7 +31,7 @@ import h5py
 from robovat import envs
 from robovat import policies
 from robovat.io import hdf5_utils
-from agent.A3C import A3C_network as nw
+from third_party.agent.A3C import A3C_network as nw
 from agent.A3C import A3C_worker as w
 from agent.A3C import A3C_config as config
 #from robovat.io.episode_generation_curious import generate_episodes
