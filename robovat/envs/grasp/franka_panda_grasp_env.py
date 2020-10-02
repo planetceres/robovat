@@ -211,6 +211,7 @@ class FrankaPandaGraspEnv(arm_env.ArmEnv):
         # artifacts due to simulation
         self.table.set_dynamics(contact_damping=100., contact_stiffness=100.)
         self.graspable.set_dynamics(
+            # mass=1.,
             lateral_friction=1.,
             rolling_friction=0.001,
             spinning_friction=0.001,
@@ -252,69 +253,70 @@ class FrankaPandaGraspEnv(arm_env.ArmEnv):
         start = Pose(
             [[x, y, z + self.config.ARM.FINGER_TIP_OFFSET], [0, np.pi, angle]]
         )
+        self.execute_gentle_grasping_action(start)
 
-        phase = 'initial'
+        # phase = 'initial'
 
-        # Handle the simulation robustness.
-        if self.is_simulation:
-            num_action_steps = 0
+        # # Handle the simulation robustness.
+        # if self.is_simulation:
+        #     num_action_steps = 0
 
-        while(phase != 'done'):
+        # while(phase != 'done'):
 
-            if self.is_simulation:
-                self.simulator.step()
-                if phase == 'start':
-                    num_action_steps += 1
+        #     if self.is_simulation:
+        #         self.simulator.step()
+        #         if phase == 'start':
+        #             num_action_steps += 1
 
-            if self._is_phase_ready(phase, num_action_steps):
-                phase = self._get_next_phase(phase)
-                logger.debug('phase: %s', phase)
+        #     if self._is_phase_ready(phase, num_action_steps):
+        #         phase = self._get_next_phase(phase)
+        #         logger.debug('phase: %s', phase)
 
-                if phase == 'overhead':
-                    self.robot.move_to_joint_positions(
-                        self.config.ARM.OVERHEAD_POSITIONS)
-                    # self.robot.grip(0)
+        #         if phase == 'overhead':
+        #             self.robot.move_to_joint_positions(
+        #                 self.config.ARM.OVERHEAD_POSITIONS)
+        #             # self.robot.grip(0)
 
-                elif phase == 'prestart':
-                    prestart = start.copy()
-                    prestart.z = self.config.ARM.GRIPPER_SAFE_HEIGHT
-                    self.robot.move_to_gripper_pose(prestart)
+        #         elif phase == 'prestart':
+        #             prestart = start.copy()
+        #             prestart.z = self.config.ARM.GRIPPER_SAFE_HEIGHT
+        #             self.robot.move_to_gripper_pose(prestart)
 
-                elif phase == 'start':
-                    self.robot.move_to_gripper_pose(start, straight_line=True)
+        #         elif phase == 'start':
+        #             self.robot.move_to_gripper_pose(start, straight_line=True)
 
-                    # Prevent problems caused by unrealistic frictions.
-                    if self.is_simulation:
-                        self.robot.l_finger_tip.set_dynamics(
-                            lateral_friction=0.001,
-                            spinning_friction=0.001)
-                        self.robot.r_finger_tip.set_dynamics(
-                            lateral_friction=0.001,
-                            spinning_friction=0.001)
-                        self.table.set_dynamics(
-                            lateral_friction=100)
+        #             # Prevent problems caused by unrealistic frictions.
+        #             if self.is_simulation:
+        #                 self.robot.l_finger_tip.set_dynamics(
+        #                     lateral_friction=0.001,
+        #                     spinning_friction=0.001)
+        #                 self.robot.r_finger_tip.set_dynamics(
+        #                     lateral_friction=0.001,
+        #                     spinning_friction=0.001)
+        #                 self.table.set_dynamics(
+        #                     lateral_friction=100)
 
-                elif phase == 'end':
-                    self.robot.grip(1)
+        #         elif phase == 'end':
+        #             self.robot.grip(1)
 
-                elif phase == 'postend':
-                    postend = self.robot.end_effector.pose
-                    postend.z = self.config.ARM.GRIPPER_SAFE_HEIGHT
-                    self.robot.move_to_gripper_pose(
-                        postend, straight_line=True)
+        #         elif phase == 'postend':
+        #             postend = self.robot.end_effector.pose
+        #             postend.z = self.config.ARM.GRIPPER_SAFE_HEIGHT
+        #             self.robot.move_to_gripper_pose(
+        #                 postend, straight_line=True)
 
-                    # Prevent problems caused by unrealistic frictions.
-                    if self.is_simulation:
-                        self.robot.l_finger_tip.set_dynamics(
-                            lateral_friction=100,
-                            rolling_friction=10,
-                            spinning_friction=10)
-                        self.robot.r_finger_tip.set_dynamics(
-                            lateral_friction=100,
-                            rolling_friction=10,
-                            spinning_friction=10)
-                        self.table.set_dynamics(
-                            lateral_friction=1)
+        #             # Prevent problems caused by unrealistic frictions.
+        #             if self.is_simulation:
+        #                 self.robot.l_finger_tip.set_dynamics(
+        #                     lateral_friction=100,
+        #                     rolling_friction=10,
+        #                     spinning_friction=10)
+        #                 self.robot.r_finger_tip.set_dynamics(
+        #                     lateral_friction=100,
+        #                     rolling_friction=10,
+        #                     spinning_friction=10)
+        #                 self.table.set_dynamics(
+        #                     lateral_friction=1)
 
     def _get_next_phase(self, phase):
         """Get the next phase of the current phase.
@@ -513,7 +515,7 @@ class FrankaPandaGraspEnv(arm_env.ArmEnv):
             num_action_steps = 0
 
         pregrasp_pose = target_grasp_pose.copy()
-        pregrasp_pose.z += 0.1
+        pregrasp_pose.z += self.config.ARM.FINGER_TIP_OFFSET
             
         while (phase != 'done'):
             if self.is_simulation:
@@ -524,7 +526,11 @@ class FrankaPandaGraspEnv(arm_env.ArmEnv):
                 if self._is_grasping_phase_ready(phase, num_action_steps):
                     phase = self._get_grasping_next_phase(phase)
                     logger.debug(f'phase: {phase}')
-                    self.robot.grip(0)
+                    if phase != 'done':
+                        self.robot.grip(0)
+                    if phase == 'overhead':
+                        self.robot.move_to_joint_positions(
+                            self.config.ARM.OVERHEAD_POSITIONS)
                     if phase == 'pregrasp':
                         self.robot.move_to_gripper_pose(pregrasp_pose)
                     elif phase == 'grasp':
@@ -556,13 +562,18 @@ class FrankaPandaGraspEnv(arm_env.ArmEnv):
 
                                 self.simulator.step()                                    
                                 if stop_l_finger and stop_r_finger:
+                                    self.robot.grip(value + 0.1)
                                     while self.robot.is_gripper_ready():
                                         self.simulator.step()
                                     break
                             value += 0.1
-
                     elif phase == 'postend':
-                        self.robot.move_to_gripper_pose(pregrasp_pose, straight_line=True)
+                        postend = self.robot.end_effector.pose
+                        postend.z = self.config.ARM.GRIPPER_SAFE_HEIGHT
+                        self.robot.move_to_gripper_pose(
+                            postend, straight_line=True)
+
+                        # Prevent problems caused by unrealistic frictions.
                         if self.is_simulation:
                             self.robot.l_finger_tip.set_dynamics(
                                 lateral_friction=100,
@@ -574,6 +585,19 @@ class FrankaPandaGraspEnv(arm_env.ArmEnv):
                                 spinning_friction=10)
                             self.table.set_dynamics(
                                 lateral_friction=1)
+                    # elif phase == 'postend':
+                    #     self.robot.move_to_gripper_pose(pregrasp_pose, straight_line=True)
+                    #     if self.is_simulation:
+                    #         self.robot.l_finger_tip.set_dynamics(
+                    #             lateral_friction=100,
+                    #             rolling_friction=10,
+                    #             spinning_friction=10)
+                    #         self.robot.r_finger_tip.set_dynamics(
+                    #             lateral_friction=100,
+                    #             rolling_friction=10,
+                    #             spinning_friction=10)
+                    #         self.table.set_dynamics(
+                    #             lateral_friction=1)
                             
     def _get_grasping_next_phase(self, phase):
         """Get the next phase of the current phase in grasping action.
@@ -585,6 +609,7 @@ class FrankaPandaGraspEnv(arm_env.ArmEnv):
             The next phase as a string variable.        
         """
         phase_list = ['initial',
+                      'overhead',
                       'pregrasp',
                       'grasp',
                       'end',

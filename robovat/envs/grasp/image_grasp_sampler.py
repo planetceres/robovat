@@ -265,7 +265,8 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         # Return if no edge pixels
         num_pixels = edge_pixels.shape[0]
         if num_pixels == 0:
-            return []
+            raise ValueError('Failed to sample any valid grasp.')
+            # return []
 
         # Compute surface normals.
         edge_normals = surface_normals(image_filtered, edge_pixels)
@@ -293,7 +294,8 @@ class AntipodalDepthImageGraspSampler(ImageGraspSampler):
         # Return if no antipodal pairs.
         num_pairs = valid_indices.shape[0]
         if num_pairs == 0:
-            return []
+            raise ValueError('Failed to sample any valid grasp.')
+            # return []
 
         sample_size = min(self.max_rejection_samples, num_pairs)
         candidate_pair_indices = np.random.choice(

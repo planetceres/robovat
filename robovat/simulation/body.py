@@ -35,6 +35,7 @@ class Body(Entity):
         """
         Entity.__init__(self, simulator, name)
 
+        self._mass = None
         self._uid = self.physics.add_body(filename,
                                           pose,
                                           scale=scale,

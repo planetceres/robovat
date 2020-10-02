@@ -4,6 +4,19 @@ DEBUG: 0
 
 MAX_STEPS: null
 
+KINECT2:
+  DEPTH:
+    HEIGHT: 424
+    WIDTH: 512
+    DISTANCE: 1.0
+    INTRINSICS: [372.66, 0., 241.20, 0., 368.62, 214.19, 0., 0., 1.]
+    TRANSLATION: [0., -0.6, 1.5]
+    ROTATION: [-3.1415, 0, 1.5708]
+    INTRINSICS_NOISE: null
+    TRANSLATION_NOISE: null
+    ROTATION_NOISE: null
+    #CROP: [150, 0, 424, 512]
+
 OBSERVATION:
   # Choose between `depth` and `point_cloud`.
   TYPE: 'depth'
@@ -52,7 +65,7 @@ SIM:
 
   TABLE:
       PATH: 'sim/envs/arm_env/tables/table_grasp.urdf'
-      POSE: [[0.6, 0, -0.9], [0, 0, 0]]
+      POSE: [[0.6, 0, -1.0], [0, 0, 0]]
       HEIGHT_RANGE: [0.9, 0.9]
 
   GRASPABLE:
@@ -60,13 +73,18 @@ SIM:
       'sim/ycb_svl/*/*/*.urdf',
     ]
     POSE:
-      X: [-0.15, 0.15]
-      Y: [-0.15, 0.15]
+      X: [0, 0]
+      Y: [0, 0]
+      # X: [-0.2, 0.1]
+      # Y: [-0.15, 0.15]
       Z: 0.3
-      ROLL: [-3.14, 3.14]
-      PITCH: [-1.57, 1.57]
-      YAW: [-3.14, 3.14]
-    SCALE: [0.8, 1.2]
+      ROLL: [0, 0]
+      PITCH: [0, 0]
+      YAW: [0, 0]
+      # ROLL: [-3.14, 3.14]
+      # PITCH: [-1.57, 1.57]
+      # YAW: [-3.14, 3.14]
+    SCALE: [0.6, 1.0]
     USE_RANDOM_SAMPLE: 1
     RESAMPLE_N_EPISODES: 1
 

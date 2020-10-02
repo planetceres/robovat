@@ -297,7 +297,7 @@ class BulletPhysics(physics.Physics):
         Returns:
             A 3-dimensional float32 numpy array.
         """
-        mass, _, _, _, _, _, _, _, _, _ = pybullet.getDynamicsInfo(
+        mass, _, _, _, _, _, _, _, _, _, _ = pybullet.getDynamicsInfo(
             bodyUniqueId=body_uid, linkIndex=-1, physicsClientId=self.uid)
         return mass
 
