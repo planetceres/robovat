@@ -35,6 +35,8 @@ def write_data_to_hdf5(f, data, compress_size_thresh=100):
                         % (key, type(value_i), value_i))
                 group = group_list.create_group(str(i))
                 write_data_to_hdf5(group, value_i)
+        elif isinstance(value, str):
+            f.create_dataset(key, data=value)
         else:
             try:
                 if value is None:
