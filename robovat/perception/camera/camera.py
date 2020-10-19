@@ -232,9 +232,9 @@ class Camera(object):
 
         if crop is not None:
             mask = np.logical_and(
-                np.logical_and(inds[:, 0] >= crop[0], inds[:, 0] <= crop[2]),
-                np.logical_and(inds[:, 1] >= crop[1], inds[:, 1] <= crop[3]))
-            point_cloud = point_cloud[mask]
+                np.logical_and(inds[0, :] >= crop[0], inds[0, :] <= crop[2]),
+                np.logical_and(inds[1, :] >= crop[1], inds[1, :] <= crop[3]))
+            point_cloud = point_cloud[:, mask]
 
         if is_world_frame:
             point_cloud = self.pose.position.reshape(3, 1) + np.matmul(
