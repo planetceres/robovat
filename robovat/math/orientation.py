@@ -9,8 +9,8 @@ from copy import deepcopy
 
 import numpy as np
 
-from third_party.transformations import euler_from_matrix3
-from third_party.transformations import quaternion_from_matrix3
+from robovat.third_party.transformations import euler_from_matrix3
+from robovat.third_party.transformations import quaternion_from_matrix3
 from robovat.math.euler import Euler
 from robovat.math.quaternion import Quaternion
 

@@ -7,8 +7,8 @@ from __future__ import print_function
 
 import numpy as np
 
-from third_party.transformations import quaternion_from_euler
-from third_party.transformations import matrix3_from_euler
+from robovat.third_party.transformations import quaternion_from_euler
+from robovat.third_party.transformations import matrix3_from_euler
 
 
 class Euler(np.ndarray):
