@@ -19,7 +19,7 @@ scikit-learn = "^0.23.1"
 scipy = "^1.4.1"
 six = "^1.15.0"
 sklearn = "^0.0"
-pybullet = "^2.8.4"
+pybullet = "^3.0.1"
 
 [tool.poetry.dev-dependencies]
 
