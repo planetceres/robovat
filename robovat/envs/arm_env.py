@@ -8,7 +8,7 @@ import numpy as np
 
 from robovat.envs import robot_env
 from robovat.math import Pose
-from robovat.robots import sawyer, franka_panda
+from robovat.robots import sawyer, franka_panda, franka_panda_free
 from robovat.perception.camera import Kinect2
 from robovat.simulation.camera import BulletCamera
 

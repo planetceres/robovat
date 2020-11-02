@@ -51,7 +51,7 @@ SIM:
   ARM:
     CONFIG: 'configs/robots/franka_panda_sim.yaml'
     ROBOT: 'franka_panda'
-    POSE: [[0, 0, 0], [0, 0, 0]]
+    POSE: [[0, 0, -0.1], [0, 0, 0]]
     ARM_NAME: 'franka_panda'
 
   GROUND:
@@ -70,7 +70,7 @@ SIM:
 
   GRASPABLE:
     PATHS: [
-      'urdf_centered/*/*.urdf',
+      'urdf_centered_test/*/*.urdf',
     ]
     POSE:
       # X: [0, 0]
@@ -84,8 +84,8 @@ SIM:
       ROLL: [-3.14, 3.14]
       PITCH: [-1.57, 1.57]
       YAW: [-3.14, 3.14]
-    SCALE: [2.0, 2.0]
+    SCALE: [1.5, 1.5]
     USE_RANDOM_SAMPLE: 0
-    RESAMPLE_N_EPISODES: 10
+    RESAMPLE_N_EPISODES: 1
 
   MAX_ACTION_STEPS: 4000

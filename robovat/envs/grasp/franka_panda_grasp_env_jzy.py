@@ -25,7 +25,7 @@ from robovat.utils.yaml_config import YamlConfig
 GRASPABLE_NAME = 'graspable'
 
 
-class FrankaPandaGraspEnv(arm_env.ArmEnv):
+class FrankaPandaGraspEnvJzy(arm_env.ArmEnv):
     """An example franka panda grasping environment."""
 
     def __init__(self,
@@ -80,7 +80,7 @@ class FrankaPandaGraspEnv(arm_env.ArmEnv):
                 % (self.config.SIM.GRASPABLE.PATHS))
             logger.debug('Found %d graspable objects.', num_graspable_paths)
 
-        super(FrankaPandaGraspEnv, self).__init__(
+        super().__init__(
             simulator=self.simulator,
             config=self.config,
             debug=self.debug)
@@ -175,23 +175,9 @@ class FrankaPandaGraspEnv(arm_env.ArmEnv):
                                                          camera_pitch=visualizer_info['pitch'],
                                                          camera_target_position=visualizer_info['target'])
         
-        super(FrankaPandaGraspEnv, self)._reset_scene()
-
-        # Reload graspable object.
-        if self.config.SIM.GRASPABLE.RESAMPLE_N_EPISODES:
-            if (self.num_episodes %
-                    self.config.SIM.GRASPABLE.RESAMPLE_N_EPISODES == 0):
-                self.graspable_path = None
-
-        if self.graspable_path is None:
-            if self.config.SIM.GRASPABLE.USE_RANDOM_SAMPLE:
-                self.graspable_path = random.choice(
-                    self.all_graspable_paths)
-            else:
-                self.graspable_index = ((self.graspable_index + 1) %
-                                        len(self.all_graspable_paths))
-                self.graspable_path = (
-                    self.all_graspable_paths[self.graspable_index])
+        super()._reset_scene()
+        self.graspable_path = (
+            self.all_graspable_paths[self.graspable_index])
 
         pose = Pose.uniform(x=self.config.SIM.GRASPABLE.POSE.X,
                             y=self.config.SIM.GRASPABLE.POSE.Y,
@@ -200,10 +186,10 @@ class FrankaPandaGraspEnv(arm_env.ArmEnv):
                             pitch=self.config.SIM.GRASPABLE.POSE.PITCH,
                             yaw=self.config.SIM.GRASPABLE.POSE.YAW)
         pose = get_transform(source=self.table_pose).transform(pose)
-        scale = np.random.uniform(*self.config.SIM.GRASPABLE.SCALE)
+        self.scale = np.random.uniform(*self.config.SIM.GRASPABLE.SCALE)
         logger.info('Loaded the graspable object from %s with scale %.2f...',
-                    self.graspable_path, scale)
-        self.graspable = self.simulator.add_body(self.graspable_path, pose, scale=scale, name=GRASPABLE_NAME, baseMass=0.1)
+                    self.graspable_path, self.scale)
+        self.graspable = self.simulator.add_body(self.graspable_path, pose, scale=self.scale, name=GRASPABLE_NAME, baseMass=0.1)
         # self.graspable = self.simulator.add_body(self.graspable_path, pose, scale=scale * 0.01, name=GRASPABLE_NAME, collisionFrameOrientation=[-0.5, -0.5, 0.5, 0.5], visualFrameOrientation=[-0.5, -0.5, 0.5, 0.5], baseMass=0.1)
         
         logger.debug('Waiting for graspable objects to be stable...')
@@ -211,7 +197,7 @@ class FrankaPandaGraspEnv(arm_env.ArmEnv):
         # artifacts due to simulation
         self.table.set_dynamics(contact_damping=100., contact_stiffness=100.)
         self.graspable.set_dynamics(
-            # mass=1.,
+            mass=.1,
             lateral_friction=1.,
             rolling_friction=0.001,
             spinning_friction=0.001,
@@ -232,7 +218,7 @@ class FrankaPandaGraspEnv(arm_env.ArmEnv):
     def _reset_robot(self):
         """Reset the robot in simulation or the real world.
         """
-        super(FrankaPandaGraspEnv, self)._reset_robot()
+        super()._reset_robot()
         self.robot.reset(self.config.ARM.OFFSTAGE_POSITIONS)
         
     def _execute_action(self, action):
@@ -249,6 +235,7 @@ class FrankaPandaGraspEnv(arm_env.ArmEnv):
         else:
             raise ValueError(
                 'Unrecognized action type: %r' % (self.config.ACTION.TYPE))
+
         start = Pose(
             [[x, y, z + self.config.ARM.FINGER_TIP_OFFSET], [0, np.pi, angle]]
         )
