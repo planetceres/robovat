@@ -434,7 +434,114 @@ class FrankaPandaGraspEnvJzy(arm_env.ArmEnv):
             return True
         else:
             return False
-        
+
+    def execute_transport_grasping_action(self, target_grasp_pose):
+
+        def _get_grasping_next_phase(phase):
+            """Get the next phase of the current phase in grasping action.
+
+            Args:
+                phase: A string variable.
+
+            Returns:
+                The next phase as a string variable.        
+            """
+            phase_list = ['grasp',
+                        'end',
+                        'postend',
+                        'done']
+            if phase in phase_list:
+                i = phase_list.index(phase)
+                if i == len(phase_list):
+                    raise ValueError('phase %r does not have a next phase.')
+                else:
+                    return phase_list[i + 1]
+            else:
+                raise ValueError('Unrecognized phase: %r' % phase)
+
+        body = self.simulator.bodies['franka_panda']
+        positions = body.physics.compute_inverse_kinematics(
+            (self.robot._arm.uid, self.robot._end_effector.index),
+            target_grasp_pose,
+            neutral_positions=body._neutral_joint_positions)
+        # open_gripper
+        for i in [-2, -3]:
+            self.robot._arm.joints[i].position = self.robot._arm.joint_ranges[i] - 1e-3
+        for i, j in enumerate(self.robot._arm.joints):
+            if i >= len(self.robot._arm._neutral_joint_positions):
+                break
+            j.position = positions[i]
+        self.simulator.wait_until_stable(self.robot._arm)
+
+        phase = 'grasp'
+        if self.is_simulation:
+            num_action_steps = 0
+        pregrasp_pose = target_grasp_pose.copy()
+        pregrasp_pose.z += 0.1
+
+        while (phase != 'done'):
+            if self.is_simulation:
+                self.simulator.step()
+                num_action_steps += 1
+
+                if self._is_grasping_phase_ready(phase, num_action_steps):
+                    phase = _get_grasping_next_phase(phase)
+                    logger.debug(f'phase: {phase}')
+                    if phase != 'done':
+                        self.robot.grip(0)
+                    if phase == 'grasp':
+                        if self.is_simulation:
+                            self.robot.l_finger_tip.set_dynamics(
+                                lateral_friction=0.001,
+                                spinning_friction=0.001)
+                            self.robot.r_finger_tip.set_dynamics(
+                                lateral_friction=0.001,
+                                spinning_friction=0.001)
+                            self.table.set_dynamics(
+                                lateral_friction=100)
+
+                    elif phase == 'end':
+                        value = 0.2
+                        stop_l_finger = False
+                        stop_r_finger = False
+                        # This is an example of grasping gently
+                        while value < 1.0 and not (stop_l_finger or stop_r_finger):
+                            self.robot.grip(value)
+                            while not self.robot.is_gripper_ready():
+                                if self.simulator.check_contact(self.robot.l_finger_tip, self.graspable):
+                                    stop_l_finger = True
+                                    self.robot.stop_l_finger()
+                                if self.simulator.check_contact(self.robot.r_finger_tip, self.graspable):
+                                    stop_r_finger = True
+                                    self.robot.stop_r_finger()
+
+                                self.simulator.step()                                    
+                                if stop_l_finger and stop_r_finger:
+                                    self.robot.grip(value + 0.1)
+                                    while self.robot.is_gripper_ready():
+                                        self.simulator.step()
+                                    break
+                            value += 0.1
+                    elif phase == 'postend':
+                        postend = self.robot.end_effector.pose
+                        postend.z = self.config.ARM.GRIPPER_SAFE_HEIGHT
+                        self.robot.move_to_gripper_pose(
+                            postend, straight_line=True)
+
+                        # Prevent problems caused by unrealistic frictions.
+                        if self.is_simulation:
+                            self.robot.l_finger_tip.set_dynamics(
+                                lateral_friction=100,
+                                rolling_friction=10,
+                                spinning_friction=10)
+                            self.robot.r_finger_tip.set_dynamics(
+                                lateral_friction=100,
+                                rolling_friction=10,
+                                spinning_friction=10)
+                            self.table.set_dynamics(
+                                lateral_friction=1)
+
+
     def execute_grasping_action(self, target_grasp_pose):
         """Execute the grasping action given a target grasp pose
 

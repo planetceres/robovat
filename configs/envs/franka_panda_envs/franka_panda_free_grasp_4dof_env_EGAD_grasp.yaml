@@ -84,7 +84,7 @@ SIM:
       ROLL: [-3.14, 3.14]
       PITCH: [-1.57, 1.57]
       YAW: [-3.14, 3.14]
-    SCALE: [1.2, 1.2]
+    SCALE: [1.0, 2.0]
     USE_RANDOM_SAMPLE: 0
     RESAMPLE_N_EPISODES: 1
 
