@@ -466,12 +466,14 @@ class FrankaPandaGraspEnvJzy(arm_env.ArmEnv):
             neutral_positions=body._neutral_joint_positions)
         # open_gripper
         for i in [-2, -3]:
-            self.robot._arm.joints[i].position = self.robot._arm.joint_ranges[i] - 1e-3
+            j = self.robot._arm.joints[i]
+            p = self.robot._arm.joint_ranges[i] - 1e-3
+            self.simulator.physics.set_joint_position(j.uid, p)
         for i, j in enumerate(self.robot._arm.joints):
             if i >= len(self.robot._arm._neutral_joint_positions):
                 break
-            j.position = positions[i]
-        self.simulator.wait_until_stable(self.robot._arm)
+            self.simulator.physics.set_joint_position(j.uid, positions[i])
+        # self.simulator.wait_until_stable(self.robot._arm)
 
         phase = 'grasp'
         if self.is_simulation:
